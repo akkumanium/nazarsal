@@ -1,0 +1,49 @@
+"use client";
+import { useEffect,useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { CATEGORIES } from "@/lib/catalog";
+import type { Coverage,Plan,Poi,Point } from "@/lib/types";
+
+export default function CityMap({origin,plan,places,coverage,onPick}:{origin:Point|null;plan:Plan|null;places:Poi[];coverage:Coverage|null;onPick:(p:Point)=>void}){
+  const container=useRef<HTMLDivElement>(null),map=useRef<L.Map|null>(null),layer=useRef<L.LayerGroup|null>(null);
+  const picker=useRef(onPick);picker.current=onPick;
+  useEffect(()=>{
+    if(!container.current||map.current)return;
+    const m=L.map(container.current,{zoomControl:false,attributionControl:true}).setView([51.1282,71.4304],12);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>'}).addTo(m);
+    L.control.zoom({position:"bottomright"}).addTo(m);
+    m.on("click",(event:L.LeafletMouseEvent)=>picker.current({lat:event.latlng.lat,lon:event.latlng.lng,label:"Точка на карте"}));
+    m.on("keypress",(event:L.LeafletKeyboardEvent)=>{if(event.originalEvent.key==="Enter"){const center=m.getCenter();picker.current({lat:center.lat,lon:center.lng,label:"Точка на карте"});}});
+    map.current=m;layer.current=L.layerGroup().addTo(m);
+    const observer=new ResizeObserver(()=>m.invalidateSize());observer.observe(container.current);
+    return()=>{observer.disconnect();m.remove();map.current=null;layer.current=null;};
+  },[]);
+  useEffect(()=>{
+    const m=map.current,g=layer.current;if(!m||!g)return;
+    g.clearLayers();
+    if(coverage){
+      L.geoJSON(coverage,{style:f=>({color:f?.properties.count?"#276d60":"#b2a79a",weight:1,fillColor:f?.properties.count?"#3e8c78":"#cbbba7",fillOpacity:f?.properties.count?Math.min(.48,.10+Math.log1p(f.properties.count)/12):.12}),onEachFeature:(feature,polygon)=>{
+        const p=feature.properties,content=document.createElement("div");
+        content.className="coverage-popup";
+        const title=document.createElement("strong");title.textContent=`${p.count} мест · квадрат 1 км`;content.append(title);
+        const detail=document.createElement("p");detail.textContent=p.count?Object.entries(p.categories).map(([id,count])=>`${CATEGORIES[id as keyof typeof CATEGORIES]?.label??id}: ${count}`).join(" · "):p.state==="empty_verified"?"Подходящие POI в OSM не найдены; полнота загрузки проверена.":"Нужна проверка загрузки.";content.append(detail);
+        const landuseLabels:Record<string,string>={residential:"жилая застройка",commercial:"деловая застройка",retail:"торговая территория",industrial:"промышленная территория",recreation_ground:"зона отдыха"};
+        const use=document.createElement("p");use.textContent=`Территория: ${p.landuse.map((kind:string)=>landuseLabels[kind]??kind).join(", ")||"нет данных о землепользовании"}`;content.append(use);
+        polygon.bindPopup(content);
+      }}).addTo(g);
+    }
+    if(origin)L.marker([origin.lat,origin.lon],{icon:L.divIcon({className:"origin-pin",html:'<span></span>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(g).bindTooltip("Старт",{direction:"top",offset:[0,-12]});
+    const stops=plan?.stops.map(s=>s.poi)??places;
+    stops.forEach((poi,index)=>{
+      const color=CATEGORIES[poi.categories[0]].color;
+      const marker=L.marker([poi.point.lat,poi.point.lon],{icon:L.divIcon({className:"poi-pin",html:`<span style="background:${color}"><b>${index+1}</b></span>`,iconSize:[34,42],iconAnchor:[17,40]})}).addTo(g);
+      const title=document.createElement("span");title.textContent=poi.name;marker.bindTooltip(title,{direction:"top",offset:[0,-35]});
+    });
+    if(plan?.geometry)L.geoJSON(plan.geometry,{style:{color:"#197264",weight:5,opacity:.9,lineCap:"round",dashArray:plan.verified?undefined:"5 8"}}).addTo(g);
+    if(plan?.stops.length){const bounds=L.latLngBounds([...(origin?[[origin.lat,origin.lon] as L.LatLngTuple]:[]),...plan.stops.map(s=>[s.poi.point.lat,s.poi.point.lon] as L.LatLngTuple)]);m.fitBounds(bounds,{padding:[65,65],maxZoom:16});}
+    else if(origin)m.flyTo([origin.lat,origin.lon],Math.max(m.getZoom(),14),{duration:.6});
+    else if(coverage?.features.length){const extent=L.geoJSON(coverage).getBounds();if(extent.isValid())m.fitBounds(extent,{padding:[30,30]});}
+  },[origin,plan,places,coverage]);
+  return <div ref={container} className="map-canvas" role="application" aria-label="Карта Астаны. Нажмите на карту, чтобы выбрать начало прогулки."/>;
+}

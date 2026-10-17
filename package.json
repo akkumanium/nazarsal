@@ -1,0 +1,49 @@
+{
+  "name": "nazarsal-astana",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "node --wasm-num-compilation-tasks=1 --import tsx scripts/migrate.ts",
+    "data:collect": "node --wasm-num-compilation-tasks=1 --import tsx scripts/collect.ts",
+    "data:import-pbf": "node --wasm-num-compilation-tasks=1 --import tsx scripts/import-pbf.ts",
+    "data:audit": "node --wasm-num-compilation-tasks=1 --import tsx scripts/audit.ts",
+    "check:connections": "node --wasm-num-compilation-tasks=1 --import tsx scripts/check-connections.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-postgis": "0.2.10",
+    "@tailwindcss/postcss": "^4.1.0",
+    "dotenv": "^17.0.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.468.0",
+    "next": "16.4.2",
+    "openai": "7.36.0",
+    "opening_hours": "^3.9.0",
+    "osmtogeojson": "3.0.0-beta.5",
+    "pg": "^8.16.0",
+    "proj4": "^2.19.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "^0.0.1",
+    "tailwindcss": "^4.1.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/leaflet": "^1.9.20",
+    "@types/node": "^24.0.0",
+    "@types/osmtogeojson": "^2.2.1",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "5.0.5"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "version": "0af3d8ca-055f-464e-a5b2-1c21e316f3a0",
+  "status": "published",
+  "snapshot": "2026-10-16T20:21:21.000Z",
+  "tiles": [
+    {
+      "status": "complete",
+      "count": 55
+    }
+  ],
+  "counts": {
+    "raw": 1439,
+    "usable": 1436,
+    "unnamed": 577,
+    "with_hours": 287,
+    "invalid": 0
+  },
+  "coverage": [
+    {
+      "state": "empty_verified",
+      "count": 773
+    },
+    {
+      "state": "populated",
+      "count": 159
+    }
+  ],
+  "urbanCoverage": {
+    "cells": 196,
+    "with_poi": 115,
+    "empty_verified": 81
+  },
+  "duplicates": 0,
+  "categories": [
+    {
+      "category_id": "children",
+      "count": 336
+    },
+    {
+      "category_id": "coffee",
+      "count": 344
+    },
+    {
+      "category_id": "culture",
+      "count": 27
+    },
+    {
+      "category_id": "food",
+      "count": 324
+    },
+    {
+      "category_id": "gallery",
+      "count": 2
+    },
+    {
+      "category_id": "library",
+      "count": 8
+    },
+    {
+      "category_id": "mall",
+      "count": 56
+    },
+    {
+      "category_id": "museum",
+      "count": 9
+    },
+    {
+      "category_id": "park",
+      "count": 177
+    },
+    {
+      "category_id": "sights",
+      "count": 109
+    },
+    {
+      "category_id": "sport",
+      "count": 43
+    },
+    {
+      "category_id": "viewpoint",
+      "count": 1
+    }
+  ],
+  "passed": true
+}

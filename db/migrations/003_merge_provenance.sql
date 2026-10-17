@@ -1,0 +1,1 @@
+ALTER TABLE poi ADD COLUMN IF NOT EXISTS source_ids text[] NOT NULL DEFAULT '{}';
