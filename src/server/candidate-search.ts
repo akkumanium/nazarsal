@@ -46,7 +46,8 @@ export async function findCandidates(intent: SearchIntent, origin: Point, radius
   const rows = await query<PoiRow & { distance_m: number; score: number; category_fit: number; preference_fit: number }>(`
     WITH nearby AS (
       SELECT p.*,ST_Distance(p.geog,ST_SetSRID(ST_Point($1,$2),4326)::geography) distance_m
-      FROM poi p WHERE p.run_id=$3::uuid AND p.named AND p.duplicate_of IS NULL AND p.public_access AND p.geog IS NOT NULL
+      FROM poi p WHERE p.run_id=$3::uuid AND (p.named OR p.tags->>'leisure'='playground')
+      AND p.duplicate_of IS NULL AND p.public_access AND p.geog IS NOT NULL
       AND ST_DWithin(p.geog,ST_SetSRID(ST_Point($1,$2),4326)::geography,$4)
       AND (cardinality($5::text[])=0 OR p.category_ids && $5::text[])
       AND NOT (p.category_ids && $6::text[]) AND NOT(p.id=ANY($7::text[]))

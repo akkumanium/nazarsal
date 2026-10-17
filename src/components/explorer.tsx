@@ -5,6 +5,7 @@ import { ArrowRight,ArrowUp,ArrowUpRight,Check,ChevronDown,Clock3,Coffee,Compass
 import { CATEGORIES,FEATURE_IDS,FEATURE_LABELS } from "@/lib/catalog";
 import type { Coverage,DataStatus,Poi,Point,Recommendation } from "@/lib/types";
 import type { RecommendRequest,SearchIntent } from "@/lib/intent";
+import { CandidateInspector } from "./candidate-inspector";
 
 const CityMap=dynamic(()=>import("./city-map"),{ssr:false,loading:()=> <div className="map-loading"><Compass size={30}/><span>Загрузка карты…</span></div>});
 const starters=[
@@ -70,7 +71,7 @@ export function Explorer(){
     try{
       const response=await fetch("/api/recommend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:text,origin:chosenOrigin,previousIntent,excludedPoiIds:extraExcluded,controls,confirmedOriginQuery:confirm}),signal:AbortSignal.timeout(120000)});
       const data=await response.json();
-      if(!response.ok||data.error){throw new Error(data.error||"Не удалось получить ответ. Попробуйте ещё раз.");}
+      if(data.error||(!response.ok&&!data.status)){throw new Error(data.error||"Не удалось получить ответ. Попробуйте ещё раз.");}
       const recommendation=data as Recommendation;setResult(recommendation);
       setMessages(items=>items.map(item=>item.id===id?{...item,result:recommendation}:item));
       if(recommendation.intent){setPreviousIntent(recommendation.intent);setDuration(recommendation.intent.durationMinutes??60);setReturnToStart(recommendation.intent.returnToStart);setMaxWalk(recommendation.intent.maxWalkingMinutes);}
@@ -111,6 +112,7 @@ export function Explorer(){
               <div className="user-message"><div>{message.query}</div></div>
               {message.error&&<div className="assistant-message"><div className="message-author"><Sparkles size={13}/>NazarSal</div><p className="error-message">{message.error}</p><button className="text-button" disabled={busy} onClick={()=>void submit(message.query)}>Повторить запрос <RefreshCw size={12}/></button></div>}
               {result&&<div className="results assistant-message"><div className="message-author"><Sparkles size={13}/>NazarSal</div><p className="result-message message-bubble">{result.message}</p>
+              {process.env.NODE_ENV!=="production"&&<CandidateInspector result={result}/>}
               {result.originChoices&&<div className="origin-choices">{result.originChoices.map(p=><button className="choice-button" disabled={busy||!latest} key={p.id} onClick={()=>{const next={...p.point,label:p.name};pickOrigin(next);setConfirmedQuery(result.intent?.originQuery??undefined);void submit(message.query,excluded,next,result.intent?.originQuery??undefined);}}><MapPin size={15}/>{p.name}<ArrowRight size={14}/></button>)}</div>}
               {result.plans.length>1&&<div className="plan-tabs">{result.plans.map((p,i)=><button key={p.id} disabled={busy||!latest} onClick={()=>{setPlanSelections(values=>({...values,[message.id]:i}));setResult(result);setSelectedPlan(i);}} className={selection===i?"selected":""}>Вариант {i+1}</button>)}</div>}
               {plan&&<>
@@ -128,7 +130,6 @@ export function Explorer(){
                 </div>)}</div>
               </>}
               {result.places.length>0&&!plan&&result.places.map(p=><article className="stop-card" key={p.id}><div className="stop-card-top"><span className="place-category-icon" style={{color:CATEGORIES[p.categories[0]].color}}><CategoryIcon id={p.categories[0]}/></span><div><span className="stop-category">{CATEGORIES[p.categories[0]].label}</span><h3>{p.name}</h3></div><a className="source-link" href={p.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Открыть ${p.name} в OpenStreetMap`}><ArrowUpRight size={16}/></a></div>{p.description&&<p>{p.description}</p>}{p.address&&<div className="stop-address"><MapPin size={12}/>{p.address}</div>}<details className="stop-details"><summary>Подробнее<ChevronDown size={15}/></summary><PoiEvidence poi={p}/></details></article>)}
-              {result.unmetConditions.length>0&&<details className="conditions"><summary>Что стоит учесть <span>{result.unmetConditions.length}</span><ChevronDown size={14}/></summary><ul>{result.unmetConditions.map((c,i)=><li key={i}>{c}</li>)}</ul></details>}
             </div>}
             </div>;})}
             {busy&&<div className="assistant-message thinking-message" role="status"><div className="message-author"><Sparkles size={13}/>NazarSal</div><div className="message-bubble"><LoaderCircle size={15} className="spin"/><span>Подбираю места и маршрут…</span><small>{elapsed} с</small></div></div>}

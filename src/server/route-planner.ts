@@ -73,6 +73,16 @@ export function enumeratePlans(candidates:Candidate[],matrix:Matrix,intent:Searc
   visit([]);
   return result.sort((a,b)=>comparePlans(a,b,intent));
 }
+// Bound the model payload while representing each place that has a feasible plan.
+// Alternatives already contain at most one plan per candidate.
+export function selectPlanOptions(plans:Plan[],candidates:Candidate[],limit=12):Plan[]{
+  const selected:Plan[]=[];
+  const add=(plan:Plan|undefined)=>{if(plan&&selected.length<limit&&!selected.some(p=>p.id===plan.id))selected.push(plan);};
+  add(plans[0]);
+  for(const candidate of candidates)add(plans.find(p=>p.stops.some(s=>s.poi.id===candidate.id)));
+  for(const plan of plans)add(plan);
+  return selected;
+}
 export function revalidateDirections(plan:Plan,directions:DirectionsResult,candidates:Candidate[],intent:SearchIntent,start:Date):Plan|null{
   if(directions.segments.length!==plan.legs.length)return null;
   const n=candidates.length+1;

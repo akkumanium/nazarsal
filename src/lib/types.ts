@@ -24,11 +24,19 @@ export type Plan = {
   geometry: LineString | MultiLineString | null; verified: boolean;
 };
 export type RecommendationStatus = "ok" | "partial" | "needs_clarification" | "no_matches" | "service_unavailable";
+export type CandidateEvaluation = { poiId: string; reason: string };
+export type CandidatePoolDiagnostics = {
+  radiusMeters: number; candidates: Candidate[]; evaluations: CandidateEvaluation[];
+  source: "model" | "fallback" | "not_evaluated"; requestedCount: number;
+  rankedPlans: { id: string; poiIds: string[]; walkingMinutes: number }[];
+  routeChecks: { planId: string; status: "verified" | "infeasible" | "error" }[];
+};
 export type Recommendation = {
   status: RecommendationStatus; message: string; intent: SearchIntent | null; origin: Point | null;
   originChoices?: Poi[]; plans: Plan[]; places: Poi[]; unmetConditions: string[];
   datasetVersion: string | null; searchedRadiusMeters: number; explanationSource: "model" | "template";
-  diagnostics: { retrieved: number; routed: number; elapsedMs: number };
+  selectionSource?: "model" | "fallback";
+  diagnostics: { retrieved: number; routed: number; elapsedMs: number; candidatePools?: CandidatePoolDiagnostics[] };
 };
 export type DataStatus = {
   database: boolean; schemaReady: boolean; openai: boolean; routing: boolean;
