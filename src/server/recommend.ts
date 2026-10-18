@@ -72,7 +72,12 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
           const checked=revalidateDirections(plan,result,candidates,intent,start);
           pool.routeChecks.push({planId:plan.id,status:checked?"verified":"infeasible"});
           if(checked)verified.push(checked);
-        }catch(error){pool.routeChecks.push({planId:plan.id,status:"error"});if(error instanceof ConfigurationError)throw error;routeFailure=true;if(error instanceof RoutingError)routeFailureMessage=error.message;}
+        }catch(error){
+          if(error instanceof ConfigurationError)throw error;
+          const reason=error instanceof RoutingError?error.message:"Некорректный ответ при проверке маршрута.";
+          pool.routeChecks.push({planId:plan.id,status:"error",reason});
+          routeFailure=true;routeFailureMessage=reason;
+        }
       }
       if(verified.length||directionAttempts>=6)break;
       // One expansion after a failed route should cover the remaining allowed

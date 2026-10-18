@@ -30,7 +30,7 @@ export type CandidatePoolDiagnostics = {
   radiusMeters: number; candidates: Candidate[]; evaluations: CandidateEvaluation[];
   source: "model" | "fallback" | "not_evaluated"; requestedCount: number;
   rankedPlans: { id: string; poiIds: string[]; travelMinutes: number }[];
-  routeChecks: { planId: string; status: "verified" | "infeasible" | "error" }[];
+  routeChecks: { planId: string; status: "verified" | "infeasible" | "error"; reason?: string }[];
 };
 export type Recommendation = {
   status: RecommendationStatus; message: string; intent: SearchIntent | null; origin: Point | null;

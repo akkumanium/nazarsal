@@ -30,7 +30,7 @@ export function CandidateInspector({result}:{result:Recommendation}){
             {p.description&&<p>{p.description}</p>}
             <p className="candidate-evaluation">{evaluation?`Оценка ИИ: ${evaluation.reason}`:"Оценка ИИ отсутствует."}</p>
             {plans.length>0&&<p>Позиции маршрутов в рейтинге: {plans.map(plan=>pool.rankedPlans.indexOf(plan)+1).join(", ")}</p>}
-            {checks.length>0&&<p>Проверка пути: {checks.map(check=>check.status==="verified"?"подтверждён":check.status==="infeasible"?"не укладывается в условия":"ошибка сервиса").join(" · ")}</p>}
+            {checks.length>0&&<p>Проверка пути: {checks.map(check=>check.status==="verified"?"подтверждён":check.status==="infeasible"?"не укладывается в условия":check.reason??"ошибка сервиса (причина не сохранена)").join(" · ")}</p>}
             <details><summary>Данные кандидата · {p.id}</summary>
               <p>Оценка скрипта: {p.score.toFixed(3)} · соответствие категории: {p.categoryFit.toFixed(3)} · пожеланиям: {p.preferenceFit.toFixed(3)}</p>
               <p>Часы работы: {p.openingHours??"неизвестны"}</p>
