@@ -17,6 +17,13 @@ beforeEach(()=>{vi.resetAllMocks();vi.stubEnv("OPENAI_API_KEY","test-key");});
 afterEach(()=>vi.unstubAllEnvs());
 
 describe("AI candidate selection",()=>{
+  it.each(["kk", "ru", "en"] as const)("passes the selected %s language to the model", async language => {
+    api.parse.mockResolvedValue({status:"completed",output_parsed:valid()});
+    await selectRecommendations(plans,candidates,searchIntent,"Кофе",language);
+    const input=api.parse.mock.calls[0][0].input;
+    expect(JSON.parse(input[1].content).responseLanguage).toBe(language);
+    expect(input[0].content).toContain("этот явный выбор имеет приоритет над языком запроса");
+  });
   it.each([1,2,3])("accepts AI's choice of %i and ranking across all 12 candidates",async count=>{
     api.parse.mockResolvedValue({status:"completed",output_parsed:{...valid(),count}});
     const result=await selectRecommendations(plans,candidates,searchIntent,"Необычное кафе");

@@ -45,22 +45,16 @@ svg { flex-shrink: 0; }
 .nav-link { border-radius: 24px; }
 .nav-link.active { color: var(--green-dark); background: var(--panel); box-shadow: 0 2px 5px #263b3208; }
 .topbar-right { display: flex; align-items: center; gap: 22px; }
+.language-switch { display: flex; order: 1; flex-shrink: 0; gap: 2px; padding: 4px; border: 1px solid #dce0d2; border-radius: 24px; background: var(--panel); }
+.language-switch button { min-width: 39px; min-height: 32px; padding: 6px 9px; border-radius: 20px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .3px; }
+.language-switch button:hover { color: var(--green); background: var(--soft); }
+.language-switch button.selected { color: #fffbed; background: var(--green); }
 .city-badge { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #52616a; }
 .city-badge > span, .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
 .icon-button { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; color: #52616a; background: white; }
 .icon-button:hover { background: var(--paper); color: var(--ink); }
-main { padding: 0 40px 28px; }
-.page-intro { padding: 30px 0 28px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
-.intro-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: 1.5px; text-transform: uppercase; }
-.intro-eyebrow > span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-h1 { margin: 0; font-size: clamp(32px, 3.2vw, 48px); font-weight: 750; letter-spacing: -1.9px; line-height: 1.18; }
-h1 em { color: var(--green); font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
-.page-intro p { margin: 11px 0 0; font-size: 13px; color: var(--muted); line-height: 1.65; }
-.intro-note { display: flex; align-items: center; gap: 14px; padding: 12px 0 12px 24px; border-left: 1px solid #d7dbce; color: var(--green); }
-.intro-note > svg { width: 42px; height: 42px; padding: 9px; border: 1px solid #d7dbce; border-radius: 50%; transform: rotate(-15deg); }
-.intro-note > span { font-size: 12px; font-weight: 700; }
-.intro-note small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 4px; }
-.workspace { display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 20px; height: calc(100dvh - 285px); min-height: 620px; }
+main { padding: 24px 40px 28px; }
+.workspace { display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 20px; height: calc(100dvh - 134px); min-height: 620px; }
 .sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border: 1px solid #dce0d2; border-radius: 22px; overflow: hidden; box-shadow: 0 6px 24px #263b3205; }
 .sidebar-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #d4ddd8 transparent; padding: 24px 24px 20px; }
 .section-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: var(--ink); font-size: 14px; font-weight: 650; }
@@ -345,7 +339,6 @@ input::placeholder, textarea::placeholder { color: #7a8790; opacity: 1; }
   .sidebar-scroll { padding-inline: 28px; }
 }
 @media (max-width: 1100px) {
-  .intro-note { display: none; }
   .topbar { padding-inline: 24px; gap: 20px; }
   main { padding-inline: 24px; }
   .workspace { grid-template-columns: 360px minmax(0, 1fr); gap: 18px; }
@@ -360,13 +353,11 @@ input::placeholder, textarea::placeholder { color: #7a8790; opacity: 1; }
   .topbar { height: auto; min-height: 76px; padding: 16px 20px 0; flex-wrap: wrap; gap: 14px; }
   .brand { font-size: 27px; }
   .topbar-right { margin-left: auto; }
+  .topbar-right { gap: 8px; }
+  .language-switch button { min-width: 34px; padding-inline: 6px; }
   .main-nav { order: 3; width: 100%; padding: 4px; margin-bottom: 12px; gap: 6px; }
   .nav-link { flex: 1; justify-content: center; padding: 10px 8px; font-size: 13px; }
-  main { padding: 0 16px 24px; }
-  .page-intro { padding: 24px 4px 22px; }
-  .intro-eyebrow { font-size: 8px; letter-spacing: 1px; }
-  h1 { font-size: clamp(28px, 7.5vw, 42px); letter-spacing: -1.3px; }
-  .page-intro p { max-width: 340px; font-size: 12px; }
+  main { padding: 20px 16px 24px; }
   .workspace { display: flex; flex-direction: column-reverse; height: auto; min-height: 0; gap: 18px; }
   .map-panel { height: 320px; min-height: 320px; border-radius: 16px; }
   .map-canvas { min-height: 320px; }

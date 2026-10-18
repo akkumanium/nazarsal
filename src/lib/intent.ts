@@ -18,6 +18,7 @@ export const intentSchema = z.object({
 export type SearchIntent = z.infer<typeof intentSchema>;
 export const pointSchema = z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), label: z.string().max(200).optional() }).strict();
 export const requestSchema = z.object({
+  language: z.enum(["kk", "ru", "en"]).optional(),
   query: z.string().trim().min(1).max(2000), origin: pointSchema.nullable().optional(),
   previousIntent: intentSchema.nullable().optional(), excludedPoiIds: z.array(z.string().max(80)).max(30).default([]),
   startAt: z.string().datetime({ offset: true }).optional(),

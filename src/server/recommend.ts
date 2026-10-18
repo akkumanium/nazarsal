@@ -19,7 +19,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
   try{
     version=await activeVersion();
     if(!version)return response({status:"service_unavailable",message:"Сначала загрузите реальные POI: pnpm data:collect."});
-    intent=withDefaults(await parseIntent(request.query,request.previousIntent??null),request.controls);
+    intent=withDefaults(await parseIntent(request.query,request.previousIntent??null,request.language),request.controls);
     if(intent.clarification)return response({status:"needs_clarification",message:intent.clarification});
     if(intent.originQuery&&!(request.confirmedOriginQuery===intent.originQuery&&request.origin)){
       const choices=await searchPlaces(intent.originQuery,version);
@@ -58,7 +58,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
         if(matrixCalls===1&&radiusIndex<radii.length-2)radiusIndex=radii.length-2;
         continue;
       }
-      const selection=await selectRecommendations(selectPlanOptions(plans,candidates),candidates,intent,request.query);
+      const selection=await selectRecommendations(selectPlanOptions(plans,candidates),candidates,intent,request.query,request.language);
       selectionSource=selection.source;
       pool.source=selection.source;pool.evaluations=selection.evaluations;pool.requestedCount=selection.count;
       pool.rankedPlans=selection.plans.map(p=>({id:p.id,poiIds:p.stops.map(s=>s.poi.id),walkingMinutes:p.walkingMinutes}));
@@ -91,7 +91,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
     }
     if(verified.some(p=>p.stops.some(s=>s.openingState==="unknown")))unmet.push("Для части мест режим работы не подтверждён. Уточните доступ перед посещением.");
     if(verified.some(p=>p.stops.some(s=>s.poi.routingBasis==="approximate")))unmet.push("Подход рассчитан к приблизительной точке объекта; расположение входа может отличаться.");
-    const written=await writeRecommendation(verified,intent,request.query);
+    const written=await writeRecommendation(verified,intent,request.query,request.language);
     return response({status:unmet.length?"partial":"ok",message:written.summary,plans:written.plans,unmetConditions:[...new Set(unmet)],searchedRadiusMeters:radius,
       explanationSource:written.source,selectionSource,diagnostics:{...diagnostics,elapsedMs:Date.now()-began}});
   }catch(error){
