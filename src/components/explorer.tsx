@@ -1,12 +1,13 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect,useRef,useState } from "react";
-import { ArrowRight,ArrowUp,ArrowUpRight,Car,Check,ChevronDown,Clock3,Coffee,Compass,Database,Footprints,Layers,LoaderCircle,LocateFixed,MapPin,Navigation,RefreshCw,Route,Settings2,ShieldCheck,SlidersHorizontal,Sparkles,TreePine,X } from "lucide-react";
+import { ArrowRight,ArrowUp,ArrowUpRight,Car,Check,ChevronDown,Clock3,Coffee,Compass,Database,Footprints,Layers,LoaderCircle,LocateFixed,MapPin,Navigation,RefreshCw,Route,ShieldCheck,SlidersHorizontal,Sparkles,TreePine,X } from "lucide-react";
 import { CATEGORIES,FEATURE_IDS,FEATURE_LABELS } from "@/lib/catalog";
 import type { Coverage,DataStatus,Poi,Point,Recommendation } from "@/lib/types";
 import type { RecommendRequest,SearchIntent } from "@/lib/intent";
 import { CandidateInspector } from "./candidate-inspector";
 import { WeatherCard } from "./weather-card";
+import { ProfileButton } from "./profile-button";
 import { useLanguage } from "./language-provider";
 import { LANGUAGES, LANGUAGE_LABELS, LANGUAGE_NAMES } from "@/lib/i18n";
 import type { TravelMode } from "@/lib/travel";
@@ -104,7 +105,7 @@ export function Explorer(){
     <header className="topbar">
       <a href="/" className="brand" aria-label={t("NazarSal — главная")}><span className="brand-symbol"><Footprints size={23}/></span><span>NazarSal<span className="brand-dot">.</span></span></a>
       <nav className="main-nav" aria-label={t("Основная навигация")}><button className={!coverageOpen?"nav-link active":"nav-link"} onClick={()=>setCoverageOpen(false)}>{t("Исследовать город")}</button><button className={coverageOpen?"nav-link active":"nav-link"} onClick={()=>void toggleCoverage()}>{t("Покрытие города")}{" "}<ArrowUpRight size={13}/></button></nav>
-      <div className="topbar-right"><div className="language-switch" role="group" aria-label={t("Язык интерфейса")}>{LANGUAGES.map(value=><button type="button" key={value} lang={value} title={LANGUAGE_NAMES[value]} aria-label={LANGUAGE_NAMES[value]} aria-pressed={language===value} className={language===value?"selected":""} onClick={()=>setLanguage(value)}>{LANGUAGE_LABELS[value]}</button>)}</div><span className="city-badge"><span/>{t("Астана, Казахстан")}</span><button className="icon-button settings-button" onClick={()=>setSettings(true)} aria-label={t("Подключения и данные")}><Settings2 size={19}/></button></div>
+      <div className="topbar-right"><div className="language-switch" role="group" aria-label={t("Язык интерфейса")}>{LANGUAGES.map(value=><button type="button" key={value} lang={value} title={LANGUAGE_NAMES[value]} aria-label={LANGUAGE_NAMES[value]} aria-pressed={language===value} className={language===value?"selected":""} onClick={()=>setLanguage(value)}>{LANGUAGE_LABELS[value]}</button>)}</div><span className="city-badge"><span/>{t("Астана, Казахстан")}</span><ProfileButton onOpenSettings={()=>setSettings(true)}/></div>
     </header>
     <main>
       <div className="workspace">

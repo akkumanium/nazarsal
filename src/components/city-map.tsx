@@ -1,13 +1,16 @@
 "use client";
-import { useEffect,useRef } from "react";
+import { useEffect,useRef,useState,useMemo } from "react";
 import L from "leaflet";
 import { useLanguage } from "./language-provider";
 import "leaflet/dist/leaflet.css";
 import { CATEGORIES } from "@/lib/catalog";
 import type { Coverage,Plan,Poi,Point } from "@/lib/types";
+import { MapComments } from "./map-comments";
 
 export default function CityMap({origin,plan,places,coverage,onPick,routingProvider}:{origin:Point|null;plan:Plan|null;places:Poi[];coverage:Coverage|null;onPick:(p:Point)=>void;routingProvider?:"ors"|"geoapify"}){
   const {t}=useLanguage();
+  const [mapInstance,setMapInstance]=useState<L.Map|null>(null);
+  const knownPlaces=useMemo(()=>(plan?.stops.map(stop=>stop.poi)??places).map(poi=>({id:poi.id,name:poi.name,point:poi.point})),[plan,places]);
   const translator=useRef(t);translator.current=t;
   const container=useRef<HTMLDivElement>(null),map=useRef<L.Map|null>(null),layer=useRef<L.LayerGroup|null>(null);
   const picker=useRef(onPick);picker.current=onPick;
@@ -16,9 +19,10 @@ export default function CityMap({origin,plan,places,coverage,onPick,routingProvi
     const m=L.map(container.current,{zoomControl:false,attributionControl:true}).setView([51.1282,71.4304],12);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>'}).addTo(m);
 
-    m.on("click",(event:L.LeafletMouseEvent)=>picker.current({lat:event.latlng.lat,lon:event.latlng.lng,label:translator.current("Точка на карте")}));
-    m.on("keypress",(event:L.LeafletKeyboardEvent)=>{if(event.originalEvent.key==="Enter"){const center=m.getCenter();picker.current({lat:center.lat,lon:center.lng,label:translator.current("Точка на карте")});}});
+    m.on("click",(event:L.LeafletMouseEvent)=>{if(m.getContainer().dataset.commentSelecting!=="true")picker.current({lat:event.latlng.lat,lon:event.latlng.lng,label:translator.current("Точка на карте")});});
+    m.on("keypress",(event:L.LeafletKeyboardEvent)=>{if(event.originalEvent.key==="Enter"&&m.getContainer().dataset.commentSelecting!=="true"){const center=m.getCenter();picker.current({lat:center.lat,lon:center.lng,label:translator.current("Точка на карте")});}});
     map.current=m;layer.current=L.layerGroup().addTo(m);
+    setMapInstance(m);
     const observer=new ResizeObserver(()=>m.invalidateSize());observer.observe(container.current);
     return()=>{observer.disconnect();m.remove();map.current=null;layer.current=null;};
   },[]);
@@ -61,5 +65,5 @@ export default function CityMap({origin,plan,places,coverage,onPick,routingProvi
     else if(origin)m.flyTo([origin.lat,origin.lon],Math.max(m.getZoom(),14),{duration:.6});
     else if(coverage?.features.length){const extent=L.geoJSON(coverage).getBounds();if(extent.isValid())m.fitBounds(extent,{padding:[30,30]});}
   },[origin,plan,places,coverage,t]);
-  return <div ref={container} className="map-canvas" role="application" aria-label={t("Карта Астаны. Нажмите на карту, чтобы выбрать начало прогулки.")}/>;
+  return <><div ref={container} className="map-canvas" role="application" aria-label={t("Карта Астаны. Нажмите на карту, чтобы выбрать начало прогулки.")}/>{mapInstance&&<MapComments map={mapInstance} knownPlaces={knownPlaces}/>}</>;
 }

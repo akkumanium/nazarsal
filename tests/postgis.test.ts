@@ -16,6 +16,7 @@ import { finalizeGeometry,analyzeCoverage,auditData } from "../src/data/coverage
 import { findCandidates } from "../src/server/candidate-search";
 import { activeVersion,searchPlaces,getCoverage } from "../src/server/repository";
 import { intent } from "./fixtures";
+import { COMMUNITY_COOKIE, acceptFriendInvite, commentPlaces, communityBudget, communityProfileSummary, createCommunitySession, createFriendInvite, currentProfile, deleteMapComment, listMapComments, publishMapComment, removeCommunityFriend, updateCommunityProfileName } from "../src/server/comments";
 
 let version:string;
 const boundary:Feature<Polygon>={type:"Feature",geometry:{type:"Polygon",coordinates:[[[71.42,51.12],[71.45,51.12],[71.45,51.14],[71.42,51.14],[71.42,51.12]]]},properties:{}};
@@ -91,5 +92,70 @@ describe("real PostgreSQL + PostGIS pipeline",()=>{
     expect(coverage.features.filter(f=>f.properties.count===0).every(f=>f.properties.state==="needs_check")).toBe(true);
     const report=await auditData(version);expect(report.counts.usable).toBe(6);
     expect(report.passed).toBe(false);
+  });
+});
+
+describe("map comments with real SQL and privacy checks",()=>{
+  const bounds={west:71.42,south:51.12,east:71.45,north:51.14};
+  it("saves the profile name and returns real statistics for the session owner",async()=>{
+    const {profile,token}=await createCommunitySession(), other=(await createCommunitySession()).profile;
+    const id=await publishMapComment(profile,{poiId:"way/7",text:"My profile comment",lifetimeHours:1,visibility:"public"});
+    const updated=await updateCommunityProfileName(profile,"Аружан");
+    expect(updated).toEqual({id:profile.id,name:"Аружан"});
+    expect((await listMapComments(bounds,null)).find(comment=>comment.id===id)?.author.name).toBe("Аружан");
+    expect(await currentProfile(new Request("http://localhost",{headers:{cookie:`${COMMUNITY_COOKIE}=${token}`}}))).toEqual(updated);
+    expect(await communityProfileSummary(updated)).toMatchObject({activeComments:1,friendsCount:0});
+    expect(await communityProfileSummary(other)).toMatchObject({activeComments:0,friendsCount:0});
+  });
+  it("lists only existing public places and rejects arbitrary or private POIs",async()=>{
+    const {profile}=await createCommunitySession();
+    const places=await commentPlaces(bounds);
+    expect(places.places.some(place=>place.id==="way/7")).toBe(true);
+    expect(places.places.some(place=>place.id==="node/4")).toBe(false);
+    for(const poiId of ["node/99999999","node/4"]){
+      await expect(publishMapComment(profile,{poiId,text:"Closed today",lifetimeHours:1,visibility:"public"})).rejects.toThrow("существующее место");
+    }
+  });
+  it("uses an opaque cookie for identity and rejects a profile ID as a credential",async()=>{
+    const {profile,token}=await createCommunitySession();
+    const request=(value:string)=>new Request("http://localhost/api/comments",{headers:{cookie:`${COMMUNITY_COOKIE}=${value}`}});
+    expect(await currentProfile(request(token))).toEqual(profile);
+    expect(await currentProfile(request(profile.id))).toBeNull();
+    expect(await currentProfile(request("a".repeat(43)))).toBeNull();
+  });
+  it("hides friends-only comments until a single-use invitation is accepted, and revokes access",async()=>{
+    const author=(await createCommunitySession()).profile,friend=(await createCommunitySession()).profile,stranger=(await createCommunitySession()).profile;
+    const id=await publishMapComment(author,{poiId:"way/7",text:"Private entrance tip",lifetimeHours:6,visibility:"friends"});
+    expect((await listMapComments(bounds,null)).some(comment=>comment.id===id)).toBe(false);
+    expect((await listMapComments(bounds,stranger)).some(comment=>comment.id===id)).toBe(false);
+    expect((await listMapComments(bounds,author)).find(comment=>comment.id===id)?.canDelete).toBe(true);
+    const code=await createFriendInvite(author);
+    await expect(acceptFriendInvite(author,code)).rejects.toThrow("недействителен");
+    await acceptFriendInvite(friend,code);
+    expect((await listMapComments(bounds,friend)).find(comment=>comment.id===id)?.canDelete).toBe(false);
+    await expect(acceptFriendInvite(stranger,code)).rejects.toThrow("недействителен");
+    await removeCommunityFriend(author,friend.id);
+    expect((await listMapComments(bounds,friend)).some(comment=>comment.id===id)).toBe(false);
+  });
+  it("computes expiry on the server and omits expired comments, including for their author",async()=>{
+    const {profile}=await createCommunitySession();
+    const id=await publishMapComment(profile,{poiId:"way/7",text:"Public note",lifetimeHours:1,visibility:"public"});
+    const row=(await listMapComments(bounds,null)).find(comment=>comment.id===id)!;
+    expect(Date.parse(row.expiresAt)-Date.parse(row.createdAt)).toBe(3600000);
+    expect(row.place.point.lat).toBeCloseTo(51.1282,3);
+    await state.database!.query("UPDATE map_comments SET created_at=now()-interval '2 hours',expires_at=now()-interval '1 hour' WHERE id=$1",[id]);
+    expect((await listMapComments(bounds,profile)).some(comment=>comment.id===id)).toBe(false);
+  });
+  it("only lets the author delete a comment",async()=>{
+    const author=(await createCommunitySession()).profile,other=(await createCommunitySession()).profile;
+    const id=await publishMapComment(author,{poiId:"way/7",text:"An honest tip",lifetimeHours:24,visibility:"public"});
+    await expect(deleteMapComment(other,id)).rejects.toThrow("другому пользователю");
+    expect((await listMapComments(bounds,null)).some(comment=>comment.id===id)).toBe(true);
+    await deleteMapComment(author,id);
+    expect((await listMapComments(bounds,null)).some(comment=>comment.id===id)).toBe(false);
+  });
+  it("enforces write budgets atomically in the database",async()=>{
+    await communityBudget("test-limit",1);
+    await expect(communityBudget("test-limit",1)).rejects.toThrow("Слишком много");
   });
 });
