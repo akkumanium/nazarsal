@@ -77,12 +77,27 @@ describe("schedule evaluation",()=>{
   });
 });
 describe("route feasibility",()=>{
+  it("keeps driving time separate from walking limits and retains the total budget",()=>{
+    const candidates=[candidate("1")],m=matrix(2,600);
+    const walking=intent({maxWalkingMinutes:1});
+    expect(evaluateSequence([0],candidates,m,walking,start)).toBeNull();
+    const driving={...walking,travelMode:"drive" as const};
+    const plan=evaluateSequence([0],candidates,m,driving,start)!;
+    expect(plan.travelMode).toBe("drive");expect(plan.travelMinutes).toBe(10);expect(plan.totalMinutes).toBe(31);
+    expect(plan.stops[0].arrivalAt).toBe(new Date(start.getTime()+600000).toISOString());
+    expect(evaluateSequence([0],candidates,m,{...driving,durationMinutes:20},start)).toBeNull();
+  });
+  it("expands driving searches while preserving explicit radius limits",()=>{
+    expect(searchRadii(intent({travelMode:"drive"})).at(-1)).toBe(20000);
+    expect(searchRadii(intent()).at(-1)).toBe(5000);
+    expect(searchRadii(intent({travelMode:"drive",maxRadiusMeters:400}))).toEqual([400]);
+  });
   it("honours directed return travel and reserve",()=>{
     const m=matrix(2);m.durations[1][0]=2400;
     expect(evaluateSequence([0],[candidate("1")],m,intent({returnToStart:true,durationMinutes:60}),start)).toBeNull();
     m.durations[1][0]=600;
     const p=evaluateSequence([0],[candidate("1")],m,intent({returnToStart:true}),start)!;
-    expect(p.walkingMinutes).toBe(15);expect(p.totalMinutes).toBe(36);expect(p.legs[1].toId).toBe("origin");
+    expect(p.travelMinutes).toBe(15);expect(p.totalMinutes).toBe(36);expect(p.legs[1].toId).toBe("origin");
   });
   it("keeps AND goals in order and OR in one group",()=>{
     const points=[candidate("1","coffee"),candidate("2","park")],m=matrix(3);

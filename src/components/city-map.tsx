@@ -56,7 +56,7 @@ export default function CityMap({origin,plan,places,coverage,onPick,routingProvi
       const marker=L.marker([poi.point.lat,poi.point.lon],{icon:L.divIcon({className:"poi-pin",html:`<span style="background:${color}"><b>${index+1}</b></span>`,iconSize:[34,42],iconAnchor:[17,40]})}).addTo(g);
       const title=document.createElement("span");title.textContent=poi.name;marker.bindTooltip(title,{direction:"top",offset:[0,-35]});
     });
-    if(plan?.geometry)L.geoJSON(plan.geometry,{style:{color:"#197264",weight:5,opacity:.9,lineCap:"round",dashArray:plan.verified?undefined:"5 8"}}).addTo(g);
+    if(plan?.geometry)L.geoJSON(plan.geometry,{style:{color:plan.travelMode==="drive"?"#3d6aab":"#197264",weight:5,opacity:.9,lineCap:"round",dashArray:plan.verified?undefined:"5 8"}}).addTo(g);
     if(plan?.stops.length){const bounds=L.latLngBounds([...(origin?[[origin.lat,origin.lon] as L.LatLngTuple]:[]),...plan.stops.map(s=>[s.poi.point.lat,s.poi.point.lon] as L.LatLngTuple)]);m.fitBounds(bounds,{padding:[65,65],maxZoom:16});}
     else if(origin)m.flyTo([origin.lat,origin.lon],Math.max(m.getZoom(),14),{duration:.6});
     else if(coverage?.features.length){const extent=L.geoJSON(coverage).getBounds();if(extent.isValid())m.fitBounds(extent,{padding:[30,30]});}

@@ -2,7 +2,7 @@ import "./env";
 import OpenAI from "openai";
 import { closeDb,query } from "../src/server/db";
 import { routingConfig } from "../src/server/routing-config";
-import { walkingDirections,walkingMatrix } from "../src/server/routing";
+import { routeDirections,routeMatrix } from "../src/server/routing";
 
 async function main(){
   try{const rows=await query("SELECT PostGIS_Version() postgis,current_database() database");console.log("PostgreSQL/PostGIS: OK",rows[0].postgis);}catch{console.log("PostgreSQL/PostGIS: не подключён или не выполнена миграция");}
@@ -10,9 +10,9 @@ async function main(){
   try{
     const {name}=routingConfig();
     const points=[{lon:71.4304,lat:51.1282},{lon:71.433,lat:51.129}];
-    await walkingMatrix(points[0],[points[1]],["connection-check"],"connection-check");
+    await routeMatrix(points[0],[points[1]],["connection-check"],"connection-check");
     console.log(`${name}: матрица OK`);
-    await walkingDirections(points);
+    await routeDirections(points);
     console.log(`${name}: маршрут OK`);
   }catch(error){console.log("Маршрутизация:",error instanceof Error?error.message:"не удалось проверить подключение");}
 }

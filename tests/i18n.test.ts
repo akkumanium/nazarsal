@@ -3,6 +3,12 @@ import { isLanguage, translate } from "../src/lib/i18n";
 import { requestSchema } from "../src/lib/intent";
 
 describe("language selection", () => {
+  it("validates travel modes and carries them across follow-up requests", () => {
+    expect(requestSchema.parse({query:"Coffee",travelMode:"drive"}).travelMode).toBe("drive");
+    expect(requestSchema.parse({query:"Coffee",travelMode:"walk"}).travelMode).toBe("walk");
+    expect(requestSchema.safeParse({query:"Coffee",travelMode:"fly"}).success).toBe(false);
+    expect(requestSchema.parse({query:"Coffee"}).travelMode).toBeUndefined();
+  });
   it.each(["kk", "ru", "en"])("accepts %s in recommendation requests", language => {
     expect(requestSchema.parse({ query: "Coffee", language }).language).toBe(language);
     expect(isLanguage(language)).toBe(true);

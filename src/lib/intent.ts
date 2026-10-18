@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATEGORY_IDS, FEATURE_IDS } from "./catalog";
+import { TRAVEL_MODES, type TravelMode } from "./travel";
 
 const constraintSchema = z.object({
   feature: z.enum(FEATURE_IDS), operator: z.enum(["eq", "lte", "gte"]),
@@ -15,12 +16,13 @@ export const intentSchema = z.object({
   constraints: z.array(constraintSchema).max(16),
   unresolvedPreferences: z.array(z.string().max(200)).max(12), clarification: z.string().max(400).nullable()
 }).strict();
-export type SearchIntent = z.infer<typeof intentSchema>;
+export type SearchIntent = z.infer<typeof intentSchema> & { travelMode?: TravelMode };
 export const pointSchema = z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), label: z.string().max(200).optional() }).strict();
 export const requestSchema = z.object({
   language: z.enum(["kk", "ru", "en"]).optional(),
+  travelMode: z.enum(TRAVEL_MODES).optional(),
   query: z.string().trim().min(1).max(2000), origin: pointSchema.nullable().optional(),
-  previousIntent: intentSchema.nullable().optional(), excludedPoiIds: z.array(z.string().max(80)).max(30).default([]),
+  previousIntent: intentSchema.extend({ travelMode: z.enum(TRAVEL_MODES).optional() }).nullable().optional(), excludedPoiIds: z.array(z.string().max(80)).max(30).default([]),
   startAt: z.string().datetime({ offset: true }).optional(),
   controls: z.object({
     durationMinutes: z.number().int().min(10).max(480).optional(),

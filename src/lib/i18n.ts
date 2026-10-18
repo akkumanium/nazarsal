@@ -8,6 +8,14 @@ export function isLanguage(value: unknown): value is Language {
 
 // Russian is the source language. Each entry contains Kazakh and English.
 const translations: Record<string, readonly [string, string]> = {
+  "Способ передвижения": ["Қозғалу тәсілі", "Travel mode"],
+  "Расчёт маршрутов": ["Бағыттарды есептеу", "Route calculation"],
+  "Пешком": ["Жаяу", "Walking"],
+  "На машине": ["Көлікпен", "Driving"],
+  "на машине": ["көлікпен", "by car"],
+  "Маршрут — около": ["Бағыт — шамамен", "Trip — about"],
+  "на машине до «{name}»": ["«{name}» орнына дейін көлікпен", "drive to “{name}”"],
+  "Оценка без актуальных пробок. Парковка, подход к месту и ожидание такси не включены.": ["Нақты кептелістер ескерілмеген. Тұрақ, орынға жаяу бару және такси күту уақыты қосылмаған.", "Estimate without live traffic. Parking, walking to the place and taxi pickup time are not included."],
   "Загрузка карты…": ["Карта жүктелуде…", "Loading map…"],
   "Например, кофе и прогулка в парке…": ["Мысалы, кофе және саябақтағы серуен…", "For example, coffee and a walk in a park…"],
   "Замени остановку «{name}», сохрани остальные пожелания.": ["«{name}» аялдамасын ауыстыр, қалған тілектерімді сақта.", "Replace the stop “{name}” and keep my other preferences."],

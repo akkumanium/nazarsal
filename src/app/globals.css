@@ -254,6 +254,13 @@ input::placeholder, textarea::placeholder { color: #7a8790; opacity: 1; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .chat-panel { min-width: 0; }
+.travel-settings { padding: 12px 20px; border-bottom: 1px solid var(--line); flex-shrink: 0; background: var(--panel); }
+.travel-options { display: flex; gap: 5px; padding: 4px; border-radius: 12px; background: var(--soft); }
+.travel-options button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 37px; padding: 7px 10px; border-radius: 9px; font-size: 12px; color: var(--muted); }
+.travel-options button.selected { color: var(--green-dark); background: var(--panel); box-shadow: 0 1px 5px #263b3210; font-weight: 700; }
+.travel-options button:not(:disabled):hover { color: var(--green); }
+.travel-note { margin: 9px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.chat-scroll .plan-summary > .plan-mode { display: flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; }
 .chat-header { display: flex; align-items: center; gap: 11px; padding: 20px; border-bottom: 1px solid #ffffff15; flex-shrink: 0; background: var(--green-dark); color: #fffbed; }
 .assistant-avatar { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #e8d9b83b; border-radius: 50%; background: #ffffff0b; color: #e6cf9b; }
 .chat-header h2 { margin: 0; font-size: 14px; font-weight: 650; }

@@ -6,7 +6,7 @@ import { activeVersion, searchPlaces } from "./repository";
 import { parseIntent, selectRecommendations, writeRecommendation } from "./openai";
 import { featureMatches, findCandidates, searchRadii, selectDiverseCandidates } from "./candidate-search";
 import { enumeratePlans, missingGoals, revalidateDirections, routePoints, selectPlanOptions } from "./route-planner";
-import { RoutingError, walkingDirections, walkingMatrix } from "./routing";
+import { RoutingError, routeDirections, routeMatrix } from "./routing";
 import { ConfigurationError } from "./db";
 
 export async function recommend(request:RecommendRequest):Promise<Recommendation>{
@@ -19,7 +19,8 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
   try{
     version=await activeVersion();
     if(!version)return response({status:"service_unavailable",message:"Сначала загрузите реальные POI: pnpm data:collect."});
-    intent=withDefaults(await parseIntent(request.query,request.previousIntent??null,request.language),request.controls);
+    const travelMode=request.travelMode??request.previousIntent?.travelMode??"walk";
+    intent={...withDefaults(await parseIntent(request.query,request.previousIntent??null,request.language,travelMode),request.controls),travelMode};
     if(intent.clarification)return response({status:"needs_clarification",message:intent.clarification});
     if(intent.originQuery&&!(request.confirmedOriginQuery===intent.originQuery&&request.origin)){
       const choices=await searchPlaces(intent.originQuery,version);
@@ -36,7 +37,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
     const verified:Plan[]=[];
     let selectionSource:"model"|"fallback"|undefined;
     let routeFailure=false,matrixCalls=0,directionAttempts=0;
-    let routeFailureMessage="Не удалось проверить пешеходные пути.";
+    let routeFailureMessage="Не удалось проверить маршруты.";
     let previousIds="";
     for(let radiusIndex=0;radiusIndex<radii.length;radiusIndex++){
       const r=radii[radiusIndex];
@@ -51,7 +52,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
       candidatePools.push(pool);
       let plans:Plan[];
       try{
-        const matrix=await walkingMatrix(origin,candidates.map(p=>p.routingPoint),candidates.map(p=>p.id),version,originPoiId);
+        const matrix=await routeMatrix(origin,candidates.map(p=>p.routingPoint),candidates.map(p=>p.id),version,originPoiId,travelMode);
         plans=enumeratePlans(candidates,matrix,intent,start);
       }catch(error){if(error instanceof ConfigurationError)throw error;routeFailure=true;if(error instanceof RoutingError)routeFailureMessage=error.message;break;}
       if(!plans.length){
@@ -61,13 +62,13 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
       const selection=await selectRecommendations(selectPlanOptions(plans,candidates),candidates,intent,request.query,request.language);
       selectionSource=selection.source;
       pool.source=selection.source;pool.evaluations=selection.evaluations;pool.requestedCount=selection.count;
-      pool.rankedPlans=selection.plans.map(p=>({id:p.id,poiIds:p.stops.map(s=>s.poi.id),walkingMinutes:p.walkingMinutes}));
+      pool.rankedPlans=selection.plans.map(p=>({id:p.id,poiIds:p.stops.map(s=>s.poi.id),travelMinutes:p.travelMinutes}));
       for(const plan of selection.plans){
         if(verified.length>=selection.count||directionAttempts>=6)break;
         if(verified.some(p=>p.stops[0].poi.id===plan.stops[0].poi.id)&&intent.mode==="alternatives")continue;
         directionAttempts++;
         try{
-          const result=await walkingDirections(routePoints(plan,origin));
+          const result=await routeDirections(routePoints(plan,origin),120,travelMode);
           const checked=revalidateDirections(plan,result,candidates,intent,start);
           pool.routeChecks.push({planId:plan.id,status:checked?"verified":"infeasible"});
           if(checked)verified.push(checked);

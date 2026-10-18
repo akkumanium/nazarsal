@@ -1,6 +1,7 @@
 import type { FeatureCollection, Geometry, LineString, MultiLineString, MultiPolygon, Polygon } from "geojson";
 import type { CategoryId, FeatureId } from "./catalog";
 import type { SearchIntent } from "./intent";
+import type { TravelMode } from "./travel";
 
 export type Point = { lat: number; lon: number; label?: string };
 export type FeatureEvidence = { value: boolean | string | number | null; tag: string | null; basis: "explicit" | "inferred" | "unknown"; sourceElementIds?:string[] };
@@ -19,7 +20,7 @@ export type Matrix = { durations: (number | null)[][]; distances: (number | null
 export type Leg = { fromId: string; toId: string; durationSeconds: number; distanceMeters: number };
 export type Stop = { poi: Poi; arrivalAt: string; departureAt: string; visitMinutes: number; openingState: OpeningState; why: string; action: string };
 export type Plan = {
-  id: string; stops: Stop[]; legs: Leg[]; walkingMinutes: number; visitMinutes: number;
+  id: string; stops: Stop[]; legs: Leg[]; travelMode: TravelMode; travelMinutes: number; visitMinutes: number;
   totalMinutes: number; reserveMinutes: number; returnToStart: boolean;
   geometry: LineString | MultiLineString | null; verified: boolean;
 };
@@ -28,7 +29,7 @@ export type CandidateEvaluation = { poiId: string; reason: string };
 export type CandidatePoolDiagnostics = {
   radiusMeters: number; candidates: Candidate[]; evaluations: CandidateEvaluation[];
   source: "model" | "fallback" | "not_evaluated"; requestedCount: number;
-  rankedPlans: { id: string; poiIds: string[]; walkingMinutes: number }[];
+  rankedPlans: { id: string; poiIds: string[]; travelMinutes: number }[];
   routeChecks: { planId: string; status: "verified" | "infeasible" | "error" }[];
 };
 export type Recommendation = {

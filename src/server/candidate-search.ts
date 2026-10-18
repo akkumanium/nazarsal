@@ -33,10 +33,12 @@ export function selectDiverseCandidates(candidates: Candidate[], intent: SearchI
 export function searchRadii(intent: SearchIntent): number[] {
   const minutes = intent.durationMinutes ?? 60;
   const reserve = Math.max(5, minutes * .1);
-  // Deliberately generous straight-line upper bound, not a walking-time estimate.
-  const timeCap = Math.max(50, (minutes - reserve) * 100 / (intent.returnToStart ? 2 : 1));
-  const cap = Math.min(intent.maxRadiusMeters ?? 5000, timeCap, 5000);
-  return [...new Set([800,1500,3000,5000].map(r => Math.min(r,cap)))].sort((a,b)=>a-b);
+  // Search bounds only; actual feasibility always uses the provider's route times.
+  const driving = intent.travelMode === "drive";
+  const maxRadius = driving ? 20000 : 5000;
+  const timeCap = Math.max(50, (minutes - reserve) * (driving ? 600 : 100) / (intent.returnToStart ? 2 : 1));
+  const cap = Math.min(intent.maxRadiusMeters ?? maxRadius, timeCap, maxRadius);
+  return [...new Set((driving ? [1500,5000,10000,20000] : [800,1500,3000,5000]).map(r => Math.min(r,cap)))].sort((a,b)=>a-b);
 }
 export async function findCandidates(intent: SearchIntent, origin: Point, radius: number, version: string, excluded: string[], start: Date): Promise<Candidate[]> {
   const goals = intent.goals;

@@ -9,7 +9,7 @@ vi.mock("@/server/candidate-search",async()=>{
   const actual=await vi.importActual<typeof import("../src/server/candidate-search")>("../src/server/candidate-search");
   return {...actual,findCandidates:services.find};
 });
-vi.mock("@/server/routing",async()=>({...await vi.importActual<typeof import("../src/server/routing")>("../src/server/routing"),walkingMatrix:services.matrix,walkingDirections:services.directions}));
+vi.mock("@/server/routing",async()=>({...await vi.importActual<typeof import("../src/server/routing")>("../src/server/routing"),routeMatrix:services.matrix,routeDirections:services.directions}));
 import { recommend } from "../src/server/recommend";
 beforeEach(()=>{
   vi.resetAllMocks();
@@ -21,6 +21,15 @@ beforeEach(()=>{
   services.select.mockImplementation(async plans=>({plans,count:1,evaluations:[],source:"model"}));
 });
 describe("recommendation orchestration",()=>{
+  it("passes the chosen mode through planning and preserves it in the response",async()=>{
+    const origin={lat:51.1282,lon:71.4304};
+    const result=await recommend({query:"Кофе рядом",origin,travelMode:"drive",excludedPoiIds:[]});
+    expect(result.intent?.travelMode).toBe("drive");
+    expect(services.matrix.mock.calls[0][5]).toBe("drive");
+    expect(services.directions.mock.calls[0][2]).toBe("drive");
+    expect(result.plans[0].travelMode).toBe("drive");
+    expect(result.plans[0].travelMinutes).toBeGreaterThan(0);
+  });
   it.each([1,2,3])("lets AI choose %i alternatives from all 12, including the last script candidate",async count=>{
     const candidates=Array.from({length:12},(_,i)=>candidate(String(i+1)));
     services.parse.mockResolvedValue(intent({mode:"alternatives"}));services.find.mockResolvedValue(candidates);services.matrix.mockResolvedValue(matrix(13));

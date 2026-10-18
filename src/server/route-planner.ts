@@ -46,16 +46,16 @@ export function evaluateSequence(indices:number[],candidates:Candidate[],matrix:
     if(seconds==null||distance==null)return null;
     legs.push({fromId:pois.at(-1)!.id,toId:"origin",durationSeconds:seconds,distanceMeters:distance});time+=seconds*1000;
   }
-  const walkingMinutes=legs.reduce((s,l)=>s+l.durationSeconds/60,0),visitMinutes=stops.reduce((s,p)=>s+p.visitMinutes,0);
-  const reserve=reserveMinutes(intent),total=walkingMinutes+visitMinutes+reserve;
-  if(total>(intent.durationMinutes??60)+1e-8||walkingMinutes>(intent.maxWalkingMinutes??Infinity))return null;
-  return {id:pois.map(p=>p.id).join("~"),stops,legs,walkingMinutes,visitMinutes,totalMinutes:total,reserveMinutes:reserve,returnToStart:intent.returnToStart,geometry:null,verified:false};
+  const travelMinutes=legs.reduce((s,l)=>s+l.durationSeconds/60,0),visitMinutes=stops.reduce((s,p)=>s+p.visitMinutes,0);
+  const reserve=reserveMinutes(intent),total=travelMinutes+visitMinutes+reserve;
+  if(total>(intent.durationMinutes??60)+1e-8||(intent.travelMode!=="drive"&&travelMinutes>(intent.maxWalkingMinutes??Infinity)))return null;
+  return {id:pois.map(p=>p.id).join("~"),stops,legs,travelMode:intent.travelMode??"walk",travelMinutes,visitMinutes,totalMinutes:total,reserveMinutes:reserve,returnToStart:intent.returnToStart,geometry:null,verified:false};
 }
 function planRank(plan:Plan,intent:SearchIntent):number[]{
   const ids=new Set(plan.stops.flatMap(s=>s.poi.categories));
   const coverage=intent.goals.reduce((sum,g)=>sum+(g.categoryIds.some(c=>ids.has(c))?(g.priority==="primary"?1:.5):0),0);
   const preference=plan.stops.reduce((sum,s)=>sum+(s.poi as Candidate).preferenceFit,0)/plan.stops.length;
-  return [coverage,preference,-plan.walkingMinutes,-plan.stops.length];
+  return [coverage,preference,-plan.travelMinutes,-plan.stops.length];
 }
 export function comparePlans(a:Plan,b:Plan,intent:SearchIntent):number{
   const ar=planRank(a,intent),br=planRank(b,intent);

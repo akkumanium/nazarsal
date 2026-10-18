@@ -4,6 +4,7 @@ import type { Matrix, Point } from "@/lib/types";
 import type { LineString, MultiLineString } from "geojson";
 import { query } from "./db";
 import { routingConfig, type RoutingProvider } from "./routing-config";
+import type { TravelMode } from "@/lib/travel";
 
 export class RoutingError extends Error { constructor(message: string) { super(message); this.name="RoutingError"; } }
 const matrixSchema=z.object({durations:z.array(z.array(z.number().nonnegative().nullable())),distances:z.array(z.array(z.number().nonnegative().nullable()))});
@@ -14,11 +15,11 @@ async function routingRequest(url:string,options:RequestInit):Promise<unknown> {
     response=await fetch(url,{...options,signal:AbortSignal.timeout(12000),cache:"no-store"});
   }catch(error){
     throw new RoutingError(error instanceof Error && ["TimeoutError","AbortError"].includes(error.name)
-      ?`Сервис пешеходных маршрутов ${name} не ответил за 12 секунд. Повторите запрос позже.`
-      :`Не удалось соединиться с сервисом пешеходных маршрутов ${name}. Проверьте соединение с сетью.`);
+      ?`Сервис маршрутов ${name} не ответил за 12 секунд. Повторите запрос позже.`
+      :`Не удалось соединиться с сервисом маршрутов ${name}. Проверьте соединение с сетью.`);
   }
   if(response.status===401||response.status===403)throw new RoutingError(`${name} отклонил доступ. Проверьте ${keyName} и разрешения ключа.`);
-  if(!response.ok) throw new RoutingError(response.status===429?"Лимит сервиса маршрутов временно исчерпан.":"Сервис пешеходных маршрутов сейчас недоступен.");
+  if(!response.ok) throw new RoutingError(response.status===429?"Лимит сервиса маршрутов временно исчерпан.":"Сервис маршрутов сейчас недоступен.");
   try{return await response.json();}catch{throw new RoutingError(`${name} вернул некорректный ответ.`);}
 }
 async function ors(path:string,body:unknown):Promise<unknown> {
@@ -58,17 +59,17 @@ async function cacheWrite(key:string,version:string,kind:string,payload:unknown)
   await query(`INSERT INTO route_cache(cache_key,dataset_version,kind,payload,expires_at) VALUES($1,$2,$3,$4,now()+interval '24 hours')
     ON CONFLICT(cache_key) DO UPDATE SET payload=EXCLUDED.payload,expires_at=EXCLUDED.expires_at`,[key,version,kind,JSON.stringify(payload)]);
 }
-function cacheKey(provider:RoutingProvider,kind:string,version:string,ids:string[]){return createHash("sha256").update(JSON.stringify([provider,"walk-v1",kind,version,ids])).digest("hex");}
-export async function walkingMatrix(origin:Point,points:Point[],ids:string[],version:string,originPoiId?:string):Promise<Matrix>{
+function cacheKey(provider:RoutingProvider,kind:string,version:string,ids:string[],mode:TravelMode){return createHash("sha256").update(JSON.stringify([provider,"routes-v2",mode,kind,version,ids])).digest("hex");}
+export async function routeMatrix(origin:Point,points:Point[],ids:string[],version:string,originPoiId?:string,mode:TravelMode="walk"):Promise<Matrix>{
   // Only a known public POI may be persisted as origin. GPS/map picks are never cached.
   const {provider}=routingConfig();
-  const key=originPoiId?cacheKey(provider,"matrix",version,[originPoiId,...ids]):null;
+  const key=originPoiId?cacheKey(provider,"matrix",version,[originPoiId,...ids],mode):null;
   if(key){const cached=await cacheRead<Matrix>(key);if(cached)return cached;}
   const locations=[origin,...points].map(p=>[p.lon,p.lat]);
   const endpoints=locations.map(location=>({location}));
   const parsed=provider==="geoapify"
-    ?parseGeoapifyMatrix(await geoapify("routematrix",{},{mode:"walk",units:"metric",sources:endpoints,targets:endpoints}),locations.length)
-    :matrixSchema.parse(await ors("matrix/foot-walking",{locations,metrics:["duration","distance"]}));
+    ?parseGeoapifyMatrix(await geoapify("routematrix",{},{mode,units:"metric",sources:endpoints,targets:endpoints}),locations.length)
+    :matrixSchema.parse(await ors(`matrix/${mode==="drive"?"driving-car":"foot-walking"}`,{locations,metrics:["duration","distance"]}));
   const n=locations.length;
   if(parsed.durations.length!==n||parsed.durations.some(row=>row.length!==n)||parsed.distances.length!==parsed.durations.length||parsed.distances.some(row=>row.length!==n))throw new RoutingError("Некорректная матрица маршрутов.");
   if(key)await cacheWrite(key,version,"matrix",parsed);
@@ -81,9 +82,9 @@ const geoapifyDirectionsSchema=z.object({features:z.array(z.object({
   geometry:z.object({type:z.literal("MultiLineString"),coordinates:z.array(z.array(positionSchema).min(2)).min(1)}),
   properties:z.object({legs:z.array(z.object({distance:z.number().nonnegative(),time:z.number().nonnegative()}))})
 })).min(1)});
-async function geoapifyDirections(points:Point[],maxSnapMeters:number):Promise<DirectionsResult>{
+async function geoapifyDirections(points:Point[],maxSnapMeters:number,mode:TravelMode):Promise<DirectionsResult>{
   const result=geoapifyDirectionsSchema.safeParse(await geoapify("routing",{
-    waypoints:points.map(p=>`${p.lat},${p.lon}`).join("|"),mode:"walk",units:"metric",format:"geojson",
+    waypoints:points.map(p=>`${p.lat},${p.lon}`).join("|"),mode,units:"metric",format:"geojson",
     intermediate_waypoint_mode:"stopover",optimize_stops:"false"
   }));
   if(!result.success)throw new RoutingError("Некорректный маршрут Geoapify.");
@@ -93,22 +94,22 @@ async function geoapifyDirections(points:Point[],maxSnapMeters:number):Promise<D
   // including both sides of intermediate stops, against the requested POIs.
   geometry.coordinates.forEach((line,i)=>{
     for(const [coordinate,point] of [[line[0],points[i]],[line[line.length-1],points[i+1]]] as const){
-      if(haversine(point,{lon:coordinate[0],lat:coordinate[1]})>maxSnapMeters)throw new RoutingError("Не удалось подтвердить доступный пешеходный подход к объекту.");
+      if(haversine(point,{lon:coordinate[0],lat:coordinate[1]})>maxSnapMeters)throw new RoutingError("Не удалось подтвердить доступный подход или подъезд к объекту.");
     }
   });
   return {geometry,segments:properties.legs.map(leg=>({distance:leg.distance,duration:leg.time}))};
 }
-export async function walkingDirections(points:Point[],maxSnapMeters=120):Promise<DirectionsResult>{
-  if(routingConfig().provider==="geoapify")return geoapifyDirections(points,maxSnapMeters);
+export async function routeDirections(points:Point[],maxSnapMeters=120,mode:TravelMode="walk"):Promise<DirectionsResult>{
+  if(routingConfig().provider==="geoapify")return geoapifyDirections(points,maxSnapMeters,mode);
   // ORS omits per-leg segments when instructions are disabled; planning needs their durations.
-  const parsed=directionSchema.parse(await ors("directions/foot-walking/geojson",{coordinates:points.map(p=>[p.lon,p.lat]),instructions:true,elevation:false,radiuses:points.map(()=>maxSnapMeters)}));
+  const parsed=directionSchema.parse(await ors(`directions/${mode==="drive"?"driving-car":"foot-walking"}/geojson`,{coordinates:points.map(p=>[p.lon,p.lat]),instructions:true,elevation:false,radiuses:points.map(()=>maxSnapMeters)}));
   const first=parsed.features[0];
   const geometry=first.geometry as LineString|MultiLineString;
   const coords=geometry.type==="LineString"?geometry.coordinates:geometry.coordinates.flat();
   if(first.properties.segments.length!==points.length-1||first.properties.way_points.length!==points.length)throw new RoutingError("Сервис вернул другой набор остановок.");
   points.forEach((point,i)=>{
     const c=coords[first.properties.way_points[i]];
-    if(!c||!Number.isFinite(c[0])||!Number.isFinite(c[1])||haversine(point,{lon:c[0],lat:c[1]})>maxSnapMeters)throw new RoutingError("Не удалось подтвердить доступный пешеходный подход к объекту.");
+    if(!c||!Number.isFinite(c[0])||!Number.isFinite(c[1])||haversine(point,{lon:c[0],lat:c[1]})>maxSnapMeters)throw new RoutingError("Не удалось подтвердить доступный подход или подъезд к объекту.");
   });
   return {geometry,segments:first.properties.segments};
 }
