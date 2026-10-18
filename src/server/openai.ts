@@ -12,6 +12,7 @@ function client(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 20000, maxRetries: 0 });
 }
 async function structured<T extends z.ZodType>(schema: T, name: string, system: string, payload: unknown, maxOutputTokens = 2200): Promise<z.infer<T>> {
+  system += "\nЕсли пользователь обращается на казахском языке, отвечай на казахском; если на английском — на английском. Это правило относится ко всем текстам для пользователя, включая уточнения, обоснования и рекомендации. Имена полей JSON и служебные идентификаторы сохраняй по схеме.";
   const api = client();
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -24,6 +25,9 @@ async function structured<T extends z.ZodType>(schema: T, name: string, system: 
       if (response.status !== "completed" || !response.output_parsed) throw new Error("Незавершённый структурированный ответ");
       return schema.parse(response.output_parsed);
     } catch (error) {
+      if (error instanceof OpenAI.APIConnectionError) {
+        throw new ConfigurationError("Не удалось соединиться с OpenAI. Проверьте доступ к api.openai.com, настройки сети, прокси или VPN и повторите запрос.");
+      }
       if (error instanceof OpenAI.APIError && error.status && [401,403,429].includes(error.status)) throw error;
       if (attempt === 1) throw error;
     }

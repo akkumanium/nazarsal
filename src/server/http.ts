@@ -7,7 +7,14 @@ const salt=randomBytes(32);
 export function json(value:unknown,status=200){return NextResponse.json(value,{status,headers:{"Cache-Control":"no-store"}});}
 export function sameOrigin(request:Request):boolean{
   const origin=request.headers.get("origin");
-  return !origin||origin===new URL(request.url).origin;
+  if(!origin)return true;
+  try{
+    const source=new URL(origin),target=new URL(request.url);
+    // Next.js may normalize the internal URL to localhost; Host retains the
+    // address used by the browser. Do not trust forwarded-host overrides.
+    const host=request.headers.get("host")??target.host;
+    return source.origin===origin&&source.protocol===target.protocol&&source.host===host;
+  }catch{return false;}
 }
 export async function allowRecommendation(request:Request):Promise<boolean>{
   const now=Date.now(),ip=request.headers.get("x-forwarded-for")?.split(",")[0]??"local";

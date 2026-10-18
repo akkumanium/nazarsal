@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("..");
 
 :root {
   --paper: #f7f8fa;
@@ -108,6 +108,27 @@ input::placeholder, textarea::placeholder { color: #7a8790; opacity: 1; }
 .map-canvas.leaflet-container { font-family: var(--font-manrope), "Segoe UI", sans-serif; }
 .map-loading { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; height: 100%; color: #587967; background: #edf2ef; }
 .map-topline { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 450; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; pointer-events: none; }
+.map-top-stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.weather-card { width: 208px; max-width: 100%; padding: 12px 14px; pointer-events: auto; color: #f5faf6; font-family: "Trebuchet MS", "Segoe UI", sans-serif; border: 1px solid #ffffff40; border-radius: 15px; background: radial-gradient(ellipse at 100% 0%, #6d99865c, transparent 70%), linear-gradient(135deg, #245c4fef, #284d5df5); box-shadow: 0 6px 22px #153e3626; backdrop-filter: blur(16px); }
+.weather-card-night { background: radial-gradient(ellipse at 100% 0%, #6f819b50, transparent 70%), linear-gradient(135deg, #29474fef, #28374ff5); }
+.weather-card-heading { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.weather-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #b6dec4; }
+.weather-time { margin-left: auto; color: #e1eee8; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.weather-card-main { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.weather-symbol { display: grid; place-items: center; width: 43px; height: 43px; flex-shrink: 0; border-radius: 12px; color: #f6dc91; background: #ffffff0d; border: 1px solid #ffffff13; }
+.weather-temperature { display: block; font-family: "Bahnschrift", "Trebuchet MS", sans-serif; font-size: 38px; font-weight: 700; line-height: 1; letter-spacing: -1.8px; font-variant-numeric: tabular-nums; }
+.weather-temperature > span { margin-left: 3px; color: #e1eee8; font-size: 15px; font-weight: 600; letter-spacing: 0; }
+.weather-condition { margin: 3px 0 0; color: #f2f7f4; font-size: 12px; font-weight: 600; line-height: 1.25; }
+.weather-details { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: #e1eee8; font-size: 10px; font-weight: 600; }
+.weather-details > span:last-child { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.weather-placeholder { display: flex; align-items: center; gap: 8px; min-height: 67px; color: #f2f7f4; font-size: 11px; font-weight: 600; }
+.weather-placeholder button { display: grid; place-items: center; width: 32px; height: 32px; margin-left: auto; border-radius: 9px; background: #ffffff12; flex-shrink: 0; }
+.weather-placeholder button:hover { background: #ffffff26; }
+@media (max-width: 600px) {
+  .weather-card { width: 198px; padding: 10px 12px; border-radius: 13px; }
+  .weather-temperature { font-size: 35px; }
+  .weather-symbol { width: 39px; height: 39px; border-radius: 11px; }
+}
 .map-label { display: flex; align-items: center; gap: 10px; padding: 10px 16px 10px 10px; border: 1px solid #ffffffb3; border-radius: 13px; background: #fffffff2; backdrop-filter: blur(12px); box-shadow: 0 2px 12px #202a300d; }
 .map-label-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--soft); color: var(--green); }
 .map-label strong { display: block; font-size: 14px; font-weight: 650; }

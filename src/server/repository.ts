@@ -1,5 +1,6 @@
 import type { QueryResultRow } from "pg";
 import { query } from "./db";
+import { routingConfig } from "./routing-config";
 import type { Coverage, DataStatus, Poi } from "@/lib/types";
 import { normalizeText } from "@/lib/text";
 
@@ -39,7 +40,8 @@ export async function searchPlaces(text: string, version?: string): Promise<(Poi
 }
 export async function getDataStatus(): Promise<DataStatus> {
   const base: DataStatus = { database: false, schemaReady: false, openai: !!process.env.OPENAI_API_KEY,
-    routing: !!process.env.ORS_API_KEY, dataset: null, latestImport: null, message: null };
+    routing: false, dataset: null, latestImport: null, message: null };
+  try { const config = routingConfig(); base.routing = true; base.routingProvider = config.provider; } catch { /* Settings show missing/invalid routing configuration. */ }
   if (!process.env.DATABASE_URL && !process.env.LOCAL_DATABASE_PATH) return { ...base, message: "Подключите базу, чтобы загрузить реальные места Астаны." };
   try {
     await query("SELECT 1"); base.database = true;

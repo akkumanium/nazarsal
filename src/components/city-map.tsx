@@ -5,13 +5,14 @@ import "leaflet/dist/leaflet.css";
 import { CATEGORIES } from "@/lib/catalog";
 import type { Coverage,Plan,Poi,Point } from "@/lib/types";
 
-export default function CityMap({origin,plan,places,coverage,onPick}:{origin:Point|null;plan:Plan|null;places:Poi[];coverage:Coverage|null;onPick:(p:Point)=>void}){
+export default function CityMap({origin,plan,places,coverage,onPick,routingProvider}:{origin:Point|null;plan:Plan|null;places:Poi[];coverage:Coverage|null;onPick:(p:Point)=>void;routingProvider?:"ors"|"geoapify"}){
   const container=useRef<HTMLDivElement>(null),map=useRef<L.Map|null>(null),layer=useRef<L.LayerGroup|null>(null);
   const picker=useRef(onPick);picker.current=onPick;
   useEffect(()=>{
     if(!container.current||map.current)return;
     const m=L.map(container.current,{zoomControl:false,attributionControl:true}).setView([51.1282,71.4304],12);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>'}).addTo(m);
+    m.attributionControl.addAttribution('Погода: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>');
     L.control.zoom({position:"bottomright"}).addTo(m);
     m.on("click",(event:L.LeafletMouseEvent)=>picker.current({lat:event.latlng.lat,lon:event.latlng.lng,label:"Точка на карте"}));
     m.on("keypress",(event:L.LeafletKeyboardEvent)=>{if(event.originalEvent.key==="Enter"){const center=m.getCenter();picker.current({lat:center.lat,lon:center.lng,label:"Точка на карте"});}});
@@ -19,6 +20,12 @@ export default function CityMap({origin,plan,places,coverage,onPick}:{origin:Poi
     const observer=new ResizeObserver(()=>m.invalidateSize());observer.observe(container.current);
     return()=>{observer.disconnect();m.remove();map.current=null;layer.current=null;};
   },[]);
+  useEffect(()=>{
+    const attribution='Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a>';
+    if(routingProvider!=="geoapify")return;
+    map.current?.attributionControl.addAttribution(attribution);
+    return()=>{map.current?.attributionControl.removeAttribution(attribution);};
+  },[routingProvider]);
   useEffect(()=>{
     const m=map.current,g=layer.current;if(!m||!g)return;
     g.clearLayers();

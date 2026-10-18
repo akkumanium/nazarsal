@@ -40,6 +40,7 @@ export type Recommendation = {
 };
 export type DataStatus = {
   database: boolean; schemaReady: boolean; openai: boolean; routing: boolean;
+  routingProvider?: "ors" | "geoapify";
   dataset: { id: string; snapshotAt: string; publishedAt: string; count: number; tiles: number } | null;
   latestImport: { id: string; status: string; completedTiles: number; totalTiles: number; error: string | null } | null;
   message: string | null;

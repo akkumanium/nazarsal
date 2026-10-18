@@ -9,7 +9,7 @@ vi.mock("@/server/candidate-search",async()=>{
   const actual=await vi.importActual<typeof import("../src/server/candidate-search")>("../src/server/candidate-search");
   return {...actual,findCandidates:services.find};
 });
-vi.mock("@/server/routing",()=>({walkingMatrix:services.matrix,walkingDirections:services.directions}));
+vi.mock("@/server/routing",async()=>({...await vi.importActual<typeof import("../src/server/routing")>("../src/server/routing"),walkingMatrix:services.matrix,walkingDirections:services.directions}));
 import { recommend } from "../src/server/recommend";
 beforeEach(()=>{
   vi.resetAllMocks();

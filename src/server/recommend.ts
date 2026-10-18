@@ -6,7 +6,7 @@ import { activeVersion, searchPlaces } from "./repository";
 import { parseIntent, selectRecommendations, writeRecommendation } from "./openai";
 import { featureMatches, findCandidates, searchRadii, selectDiverseCandidates } from "./candidate-search";
 import { enumeratePlans, missingGoals, revalidateDirections, routePoints, selectPlanOptions } from "./route-planner";
-import { walkingDirections, walkingMatrix } from "./routing";
+import { RoutingError, walkingDirections, walkingMatrix } from "./routing";
 import { ConfigurationError } from "./db";
 
 export async function recommend(request:RecommendRequest):Promise<Recommendation>{
@@ -36,6 +36,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
     const verified:Plan[]=[];
     let selectionSource:"model"|"fallback"|undefined;
     let routeFailure=false,matrixCalls=0,directionAttempts=0;
+    let routeFailureMessage="Не удалось проверить пешеходные пути.";
     let previousIds="";
     for(let radiusIndex=0;radiusIndex<radii.length;radiusIndex++){
       const r=radii[radiusIndex];
@@ -52,7 +53,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
       try{
         const matrix=await walkingMatrix(origin,candidates.map(p=>p.routingPoint),candidates.map(p=>p.id),version,originPoiId);
         plans=enumeratePlans(candidates,matrix,intent,start);
-      }catch(error){if(error instanceof ConfigurationError)throw error;routeFailure=true;break;}
+      }catch(error){if(error instanceof ConfigurationError)throw error;routeFailure=true;if(error instanceof RoutingError)routeFailureMessage=error.message;break;}
       if(!plans.length){
         if(matrixCalls===1&&radiusIndex<radii.length-2)radiusIndex=radii.length-2;
         continue;
@@ -70,7 +71,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
           const checked=revalidateDirections(plan,result,candidates,intent,start);
           pool.routeChecks.push({planId:plan.id,status:checked?"verified":"infeasible"});
           if(checked)verified.push(checked);
-        }catch(error){pool.routeChecks.push({planId:plan.id,status:"error"});if(error instanceof ConfigurationError)throw error;routeFailure=true;}
+        }catch(error){pool.routeChecks.push({planId:plan.id,status:"error"});if(error instanceof ConfigurationError)throw error;routeFailure=true;if(error instanceof RoutingError)routeFailureMessage=error.message;}
       }
       if(verified.length||directionAttempts>=6)break;
       // One expansion after a failed route should cover the remaining allowed
@@ -79,7 +80,7 @@ export async function recommend(request:RecommendRequest):Promise<Recommendation
     }
     const diagnostics={retrieved,routed:candidates.length,elapsedMs:Date.now()-began};
     if(!verified.length)return response({status:routeFailure?"service_unavailable":"no_matches",
-      message:routeFailure?"Не удалось проверить пешеходные пути. Показываем найденные места без расчёта времени и маршрута.":"Не нашли выполнимый вариант со всеми обязательными условиями. Можно изменить длительность или явно ослабить одно из условий.",
+      message:routeFailure?`${routeFailureMessage} Показываем найденные места без расчёта времени и маршрута.`:"Не нашли выполнимый вариант со всеми обязательными условиями. Можно изменить длительность или явно ослабить одно из условий.",
       places:routeFailure?candidates.slice(0,3):[],searchedRadiusMeters:radius,diagnostics,
       unmetConditions:intent.constraints.filter(c=>c.strength==="must").map(c=>`Обязательное условие: ${FEATURE_LABELS[c.feature]}`)});
     const unmet=[...intent.unresolvedPreferences,...missingGoals(verified,intent)];

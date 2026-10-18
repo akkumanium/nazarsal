@@ -6,6 +6,7 @@ import { CATEGORIES,FEATURE_IDS,FEATURE_LABELS } from "@/lib/catalog";
 import type { Coverage,DataStatus,Poi,Point,Recommendation } from "@/lib/types";
 import type { RecommendRequest,SearchIntent } from "@/lib/intent";
 import { CandidateInspector } from "./candidate-inspector";
+import { WeatherCard } from "./weather-card";
 
 const CityMap=dynamic(()=>import("./city-map"),{ssr:false,loading:()=> <div className="map-loading"><Compass size={30}/><span>Загрузка карты…</span></div>});
 const starters=[
@@ -141,8 +142,8 @@ export function Explorer(){
             </div>
 
         </section>
-        <section className="map-panel" aria-label="Карта и маршрут"><CityMap origin={origin} plan={plan} places={result?.places??[]} coverage={coverageOpen?coverage:null} onPick={pickOrigin}/>
-          <div className="map-topline"><div className="map-label"><span className="map-label-icon"><Navigation size={16}/></span><span><strong>{coverageOpen?"Покрытие Астаны":"Астана"}</strong>{coverageOpen&&<small>Количество мест · сетка 1 км</small>}</span></div><button className={`map-layer-button ${coverageOpen?"active":""}`} onClick={()=>void toggleCoverage()} aria-label="Показать покрытие города" aria-pressed={coverageOpen}>{coverageBusy?<LoaderCircle className="spin" size={18}/>:<Layers size={18}/>}</button></div>
+        <section className="map-panel" aria-label="Карта и маршрут"><CityMap routingProvider={status?.routingProvider} origin={origin} plan={plan} places={result?.places??[]} coverage={coverageOpen?coverage:null} onPick={pickOrigin}/>
+          <div className="map-topline"><div className="map-top-stack"><WeatherCard/>{coverageOpen&&<div className="map-label"><span className="map-label-icon"><Navigation size={16}/></span><span><strong>Покрытие Астаны</strong><small>Количество мест · сетка 1 км</small></span></div>}</div><button className={`map-layer-button ${coverageOpen?"active":""}`} onClick={()=>void toggleCoverage()} aria-label="Показать покрытие города" aria-pressed={coverageOpen}>{coverageBusy?<LoaderCircle className="spin" size={18}/>:<Layers size={18}/>}</button></div>
           {!origin&&!coverageOpen&&<div className="map-invitation"><MapPin size={18}/><span>Нажмите на карту, чтобы выбрать старт</span></div>}
           {plan&&<div className="map-route-info"><span className="route-info-icon"><Route size={20}/></span><div><strong>{result?.intent?.mode==="itinerary"?<>{plan.stops.length} {plan.stops.length===1?"остановка":"остановки"} · {min(plan.totalMinutes)}</>:<>{min(plan.walkingMinutes)} пешком</>}</strong><small>{Math.round(plan.legs.reduce((s,l)=>s+l.distanceMeters,0))/1000} км пешком{plan.returnToStart?" · круговой маршрут":""}</small></div><span className="route-verified"><Check size={13}/>Путь рассчитан</span></div>}
           {coverageOpen&&<div className="coverage-legend"><strong>Плотность мест</strong><div><span className="legend-scale"/><span>Меньше → больше</span></div><small>{coverage?.features.length??0} участков · 1 км² каждый</small></div>}
