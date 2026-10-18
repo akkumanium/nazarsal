@@ -9,6 +9,9 @@ export function isLanguage(value: unknown): value is Language {
 // Russian is the source language. Each entry contains Kazakh and English.
 const translations: Record<string, readonly [string, string]> = {
   "Настройки": ["Баптаулар", "Settings"],
+  "Отображение комментариев": ["Пікірлерді көрсету", "Comment display"],
+  "Показывать комментарии на карте": ["Картада пікірлерді көрсету", "Show comments on the map"],
+  "Влияет только на вашу карту.": ["Тек сіздің картаңызға әсер етеді.", "Applies only to your map."],
   "Язык и подключения": ["Тіл және қосылымдар", "Language and connections"],
   "Открыть профиль": ["Профильді ашу", "Open profile"],
   "Закрыть профиль": ["Профильді жабу", "Close profile"],

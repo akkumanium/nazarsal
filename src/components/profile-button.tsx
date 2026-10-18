@@ -7,10 +7,11 @@ import type { CommunityProfile, ProfileSummary } from "@/lib/comments";
 import { COMMUNITY_UPDATED_EVENT, communityApi, ensureCommunitySession, notifyCommunityUpdate } from "@/lib/community-client";
 import { FriendsTools } from "./friends-tools";
 import { useLanguage } from "./language-provider";
-import { isLanguage, LANGUAGES, LANGUAGE_NAMES } from "@/lib/i18n";
+import { useCommentDisplay } from "@/lib/comment-display";
 
-export function ProfileButton({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const { t, language, setLanguage } = useLanguage();
+export function ProfileButton() {
+  const { t, language } = useLanguage();
+  const { showComments, setShowComments } = useCommentDisplay();
   const [open, setOpen] = useState(false), [loading, setLoading] = useState(false), [saving, setSaving] = useState(false);
   const [summary, setSummary] = useState<ProfileSummary | null>(null), [name, setName] = useState("");
   const [error, setError] = useState(""), [saved, setSaved] = useState(false), [revision, setRevision] = useState(0);
@@ -88,8 +89,8 @@ export function ProfileButton({ onOpenSettings }: { onOpenSettings: () => void }
           </>}
           {error && <p className="error-message" role="alert">{t(error)}<button type="button" className="text-button" onClick={() => setRevision(value => value + 1)}>{t("Повторить")}</button></p>}
           <details className="profile-settings">
-            <summary><span className="profile-settings-icon"><Settings2 size={19}/></span><span><strong>{t("Настройки")}</strong><small>{t("Язык и подключения")}</small></span><ChevronDown size={17}/></summary>
-            <div className="profile-settings-content"><label htmlFor="profile-language">{t("Язык интерфейса")}</label><select id="profile-language" value={language} onChange={event => { if (isLanguage(event.target.value)) setLanguage(event.target.value); }}>{LANGUAGES.map(value => <option key={value} value={value} lang={value}>{LANGUAGE_NAMES[value]}</option>)}</select><button type="button" className="profile-connections" onClick={() => { setOpen(false); onOpenSettings(); }}><Settings2 size={16}/><span>{t("Данные и подключения")}</span></button></div>
+            <summary><span className="profile-settings-icon"><Settings2 size={19}/></span><span><strong>{t("Настройки")}</strong><small>{t("Отображение комментариев")}</small></span><ChevronDown size={17}/></summary>
+            <div className="profile-settings-content"><label className="comment-display-setting"><span><strong>{t("Показывать комментарии на карте")}</strong><small>{t("Влияет только на вашу карту.")}</small></span><input type="checkbox" role="switch" aria-label={t("Показывать комментарии на карте")} checked={showComments} onChange={event => setShowComments(event.target.checked)}/><span className="comment-display-track" aria-hidden="true"/></label></div>
           </details>
           <div className="profile-footer"><p><ShieldCheck size={15}/>{t("Профиль сохраняется в этом браузере.")}</p></div>
         </div>

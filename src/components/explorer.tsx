@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect,useRef,useState } from "react";
-import { ArrowRight,ArrowUp,ArrowUpRight,Car,Check,ChevronDown,Clock3,Coffee,Compass,Database,Footprints,Layers,LoaderCircle,LocateFixed,MapPin,Navigation,RefreshCw,Route,ShieldCheck,SlidersHorizontal,Sparkles,TreePine,X } from "lucide-react";
+import { ArrowRight,ArrowUp,ArrowUpRight,Car,Check,ChevronDown,Clock3,Coffee,Compass,Database,Footprints,Layers,LoaderCircle,LocateFixed,MapPin,Navigation,RefreshCw,Route,SlidersHorizontal,Sparkles,TreePine } from "lucide-react";
 import { CATEGORIES,FEATURE_IDS,FEATURE_LABELS } from "@/lib/catalog";
 import type { Coverage,DataStatus,Poi,Point,Recommendation } from "@/lib/types";
 import type { RecommendRequest,SearchIntent } from "@/lib/intent";
@@ -42,7 +42,7 @@ export function Explorer(){
   const [result,setResult]=useState<Recommendation|null>(null),[previousIntent,setPreviousIntent]=useState<SearchIntent|null>(null);
   const [selectedPlan,setSelectedPlan]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState(""),[elapsed,setElapsed]=useState(0);
   const [coverage,setCoverage]=useState<Coverage|null>(null),[coverageOpen,setCoverageOpen]=useState(false),[coverageBusy,setCoverageBusy]=useState(false);
-  const [settings,setSettings]=useState(false),[options,setOptions]=useState(false),[locating,setLocating]=useState(false),[excluded,setExcluded]=useState<string[]>([]);
+  const [options,setOptions]=useState(false),[locating,setLocating]=useState(false),[excluded,setExcluded]=useState<string[]>([]);
   const [confirmedQuery,setConfirmedQuery]=useState<string|undefined>();
   const [messages,setMessages]=useState<ChatTurn[]>([]);
   const [planSelections,setPlanSelections]=useState<Record<number,number>>({});
@@ -56,7 +56,6 @@ export function Explorer(){
     return()=>{clearTimeout(timer);abort.abort();};
   },[originText,originFocus]);
   useEffect(()=>{if(!busy)return;setElapsed(0);const timer=setInterval(()=>setElapsed(v=>v+1),1000);return()=>clearInterval(timer);},[busy]);
-  useEffect(()=>{if(settings){const listener=(e:KeyboardEvent)=>{if(e.key==="Escape")setSettings(false);};window.addEventListener("keydown",listener);return()=>window.removeEventListener("keydown",listener);}},[settings]);
 
   useEffect(()=>{
     const container=results.current?.parentElement;
@@ -105,7 +104,7 @@ export function Explorer(){
     <header className="topbar">
       <a href="/" className="brand" aria-label={t("NazarSal — главная")}><span className="brand-symbol"><Footprints size={23}/></span><span>NazarSal<span className="brand-dot">.</span></span></a>
       <nav className="main-nav" aria-label={t("Основная навигация")}><button className={!coverageOpen?"nav-link active":"nav-link"} onClick={()=>setCoverageOpen(false)}>{t("Исследовать город")}</button><button className={coverageOpen?"nav-link active":"nav-link"} onClick={()=>void toggleCoverage()}>{t("Покрытие города")}{" "}<ArrowUpRight size={13}/></button></nav>
-      <div className="topbar-right"><div className="language-switch" role="group" aria-label={t("Язык интерфейса")}>{LANGUAGES.map(value=><button type="button" key={value} lang={value} title={LANGUAGE_NAMES[value]} aria-label={LANGUAGE_NAMES[value]} aria-pressed={language===value} className={language===value?"selected":""} onClick={()=>setLanguage(value)}>{LANGUAGE_LABELS[value]}</button>)}</div><span className="city-badge"><span/>{t("Астана, Казахстан")}</span><ProfileButton onOpenSettings={()=>setSettings(true)}/></div>
+      <div className="topbar-right"><div className="language-switch" role="group" aria-label={t("Язык интерфейса")}>{LANGUAGES.map(value=><button type="button" key={value} lang={value} title={LANGUAGE_NAMES[value]} aria-label={LANGUAGE_NAMES[value]} aria-pressed={language===value} className={language===value?"selected":""} onClick={()=>setLanguage(value)}>{LANGUAGE_LABELS[value]}</button>)}</div><span className="city-badge"><span/>{t("Астана, Казахстан")}</span><ProfileButton/></div>
     </header>
     <main>
       <div className="workspace">
@@ -165,6 +164,5 @@ export function Explorer(){
         </section>
       </div>
     </main>
-    {settings&&<div className="modal-backdrop" onClick={()=>setSettings(false)}><section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" onClick={e=>e.stopPropagation()}><button className="modal-close icon-button" onClick={()=>setSettings(false)} aria-label={t("Закрыть")}><X size={20}/></button><h2 id="settings-title">{t("Данные и подключения")}</h2><p>{t("Все рекомендации опираются на опубликованную базу OSM. Состояние ключей означает наличие настройки, а не проверку доступа к API.")}</p><div className="connection-list">{[["PostgreSQL / PostGIS",!!status?.schemaReady],["OpenAI · GPT-6 Luna",!!status?.openai],[t("Расчёт маршрутов"),!!status?.routing],[t("Датасет Астаны"),!!status?.dataset]].map(([name,ready])=><div key={String(name)}><span>{String(name)}</span><span className={ready?"connection-ready":"connection-missing"}>{ready?<><Check size={13}/>{t("Настроено")}</>:t("Нужно подключить")}</span></div>)}</div>{status?.message&&<p className="setup-message">{status.message}</p>}<div className="setup-instructions"><strong>{t("Первый запуск")}</strong><p>{t("Заполните серверный {env} по примеру {example}. Для Supabase укажите DATABASE_URL; для локальной разработки — LOCAL_DATABASE_PATH.",{env:".env.local",example:".env.example"})}</p><pre>pnpm db:migrate{"\n"}pnpm data:collect{"\n"}pnpm data:audit</pre></div>{status?.latestImport&&<p className="import-progress">{t("Последняя загрузка:")} {status.latestImport.completedTiles}/{status.latestImport.totalTiles} {t("квадратов")} · {status.latestImport.status}</p>}<div className="privacy-note"><ShieldCheck size={17}/><span>{t("Геолокация используется по вашему действию. История перемещений не сохраняется. Координаты получает сервис маршрутов; OpenAI получает пожелания и сведения о найденных местах.")}</span></div><a className="osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">{t("Данные © OpenStreetMap contributors · ODbL")} <ArrowUpRight size={13}/></a></section></div>}
   </div>;
 }

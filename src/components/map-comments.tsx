@@ -8,12 +8,14 @@ import { boundsParams, COMMENT_LIFETIMES, mapBoundsSchema, type CommentPlace, ty
 import { useLanguage } from "./language-provider";
 import { FriendsTools } from "./friends-tools";
 import { communityApi as api, ensureCommunitySession, COMMUNITY_UPDATED_EVENT, notifyCommunityUpdate } from "@/lib/community-client";
+import { useCommentDisplay } from "@/lib/comment-display";
 
 const commentSvg = '<svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M10 3h20a7 7 0 0 1 7 7v17a7 7 0 0 1-7 7H19L9 41v-7a7 7 0 0 1-6-7V10a7 7 0 0 1 7-7Z" fill="currentColor" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M12 14h16M12 21h11" stroke="white" stroke-width="2.4" stroke-linecap="round"/></svg>';
 const addCommentSvg = '<svg width="30" height="34" viewBox="0 0 30 34" aria-hidden="true"><path d="M8 3h14a5 5 0 0 1 5 5v13a5 5 0 0 1-5 5h-8l-7 5v-5a5 5 0 0 1-4-5V8a5 5 0 0 1 5-5Z" fill="white" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 10v10M10 15h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 export function MapComments({ map, knownPlaces }: { map: L.Map; knownPlaces: CommentPlace[] }) {
   const { t, language } = useLanguage();
+  const { showComments } = useCommentDisplay();
   const [stage, setStage] = useState<"idle" | "pick" | "compose" | "read">("idle");
   const [comments, setComments] = useState<MapComment[]>([]), [places, setPlaces] = useState<CommentPlace[]>([]);
   const [selected, setSelected] = useState<CommentPlace | null>(null), [profile, setProfile] = useState<CommunityProfile | null>(null);
@@ -47,6 +49,9 @@ export function MapComments({ map, knownPlaces }: { map: L.Map; knownPlaces: Com
     map.getContainer().focus({ preventScroll: true });
     void ensureProfile().catch(cause => setError(cause.message));
   }
+  useEffect(() => {
+    if (!showComments) setStage(current => current === "read" ? "idle" : current);
+  }, [showComments]);
   useEffect(() => {
     const changed = () => {
       refresh();
@@ -112,7 +117,7 @@ export function MapComments({ map, knownPlaces }: { map: L.Map; knownPlaces: Com
       marker.on("click", () => compose(place));
     }
     const grouped = new Map<string, MapComment[]>();
-    for (const comment of live) { const group = grouped.get(comment.place.id) ?? []; group.push(comment); grouped.set(comment.place.id, group); }
+    if (showComments) for (const comment of live) { const group = grouped.get(comment.place.id) ?? []; group.push(comment); grouped.set(comment.place.id, group); }
     for (const group of grouped.values()) {
       const place = group[0].place, privateOnly = group.every(comment => comment.visibility === "friends");
       const icon = L.divIcon({ className: `comment-pin${privateOnly ? " comment-pin-private" : ""}`, html: `${commentSvg}<b>${group.length}</b>`, iconSize: [40, 44], iconAnchor: [9, 41] });
@@ -124,7 +129,7 @@ export function MapComments({ map, knownPlaces }: { map: L.Map; knownPlaces: Com
       });
     }
     return () => { layer.remove(); };
-  }, [map, live, selectable, selecting, t, ensureProfile]);
+  }, [map, live, selectable, selecting, t, ensureProfile, showComments]);
 
   async function publish(event: React.FormEvent) {
     event.preventDefault(); if (!selected || saving || !lifetime) return;
