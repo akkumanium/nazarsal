@@ -10,9 +10,9 @@ import { WeatherCard } from "./weather-card";
 
 const CityMap=dynamic(()=>import("./city-map"),{ssr:false,loading:()=> <div className="map-loading"><Compass size={30}/><span>Загрузка карты…</span></div>});
 const starters=[
-  {icon:TreePine,title:"Прогулка на час",text:"Хочу погулять час: зелень, красивые виды и вернуться к началу."},
-  {icon:Coffee,title:"Кофе и парк",text:"Хочу сначала выпить кофе, потом погулять в парке. У меня 90 минут."},
-  {icon:Sparkles,title:"Время с ребёнком",text:"Со мной ребёнок. Есть час, хочу найти рядом детскую площадку."}
+  {icon:TreePine,title:"Прогулка на час",description:"Зелень, виды и немного тишины",text:"Хочу погулять час: зелень, красивые виды и вернуться к началу."},
+  {icon:Coffee,title:"Кофе и парк",description:"Любимый ритм свободного дня",text:"Хочу сначала выпить кофе, потом погулять в парке. У меня 90 минут."},
+  {icon:Sparkles,title:"Время с ребёнком",description:"Маленькое семейное приключение",text:"Со мной ребёнок. Есть час, хочу найти рядом детскую площадку."}
 ];
 const min=(value:number)=>`${Math.ceil(value)} мин`;
 const meters=(value:number)=>value<1000?`${Math.round(value)} м`:`${(value/1000).toFixed(1)} км`;
@@ -93,10 +93,10 @@ export function Explorer(){
       <div className="topbar-right"><span className="city-badge"><span/>Астана, Казахстан</span><button className="icon-button settings-button" onClick={()=>setSettings(true)} aria-label="Подключения и данные"><Settings2 size={19}/></button></div>
     </header>
     <main>
-      <section className="page-intro"><h1>Куда пойдём?</h1></section>
+      <section className="page-intro"><div><div className="intro-eyebrow"><span/>Маленькие открытия большого города</div><h1>Куда пойдём <em>сегодня?</em></h1><p>Кофе, тихий парк или новое любимое место — найдём вашу Астану.</p></div><div className="intro-note"><Compass size={24}/><span>Ближе, чем кажется.<small>Ваш следующий маршрут начинается здесь</small></span></div></section>
       <div className="workspace">
         <section className="sidebar chat-panel" aria-label="Чат с ИИ-помощником">
-          <div className="chat-header"><span className="assistant-avatar"><Sparkles size={19}/></span><div><h2>NazarSal</h2></div><button className="icon-button" aria-label="Новый диалог" title="Новый диалог" disabled={busy} onClick={resetChat}><RefreshCw size={16}/></button></div>
+          <div className="chat-header"><span className="assistant-avatar"><Sparkles size={19}/></span><div><h2>Ваш городской проводник</h2><p>NazarSal · идеи для прогулок</p></div><button className="icon-button" aria-label="Новый диалог" title="Новый диалог" disabled={busy} onClick={resetChat}><RefreshCw size={16}/></button></div>
           <details className="chat-settings"><summary><SlidersHorizontal size={14}/><span>{origin?.label??"Старт и параметры"}</span><small>{min(duration)}</small><ChevronDown size={14}/></summary><fieldset disabled={busy} className="chat-settings-fields">
             <div className="start-section" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setOriginFocus(false);}}><div className="section-caption"><label htmlFor="origin">Откуда начнём</label><button className="text-button" onClick={locate} disabled={locating}><LocateFixed size={14}/>{locating?"Определяем…":"Я здесь"}</button></div>
               <div className="origin-control"><MapPin size={18}/><input id="origin" aria-label="Начало прогулки" placeholder="Ориентир или точка на карте" value={originText} onChange={e=>{setOriginText(e.target.value);setOriginFocus(true);setOrigin(null);setConfirmedQuery(undefined);}} aria-expanded={originFocus&&suggestions.length>0} aria-autocomplete="list" aria-controls="origin-options" onKeyDown={e=>{if(e.key==="Escape")setOriginFocus(false);if(e.key==="ArrowDown"){e.preventDefault();e.currentTarget.parentElement?.nextElementSibling?.querySelector<HTMLButtonElement>("button")?.focus();}if(e.key==="Enter"&&suggestions.length===1){e.preventDefault();pickOrigin({...suggestions[0].point,label:suggestions[0].name});}}} onFocus={()=>setOriginFocus(true)} />{origin?<span className="origin-check"><Check size={14}/></span>:<ChevronDown size={15}/>}</div>
@@ -107,8 +107,8 @@ export function Explorer(){
             </div>
           </fieldset></details>
           <div className="sidebar-scroll chat-scroll" role="log" aria-label="История диалога" aria-live="polite" aria-relevant="additions text">
-            {messages.length===0&&<div className="assistant-message welcome-message"><div className="message-bubble"><p>Куда хотите сходить? Расскажите, что вам нравится и сколько у вас времени.</p></div></div>}
-            {messages.length===0&&<div className="inspiration">{starters.map(({icon:Icon,title,text})=><button key={title} className="starter-card" onClick={()=>{setQuery(text);textarea.current?.focus();}}><span className="starter-icon"><Icon size={18}/></span><strong>{title}</strong><ArrowUpRight size={16}/></button>)}</div>}
+            {messages.length===0&&<div className="assistant-message welcome-message"><span className="welcome-caption">ГОРОД В ВАШЕМ РИТМЕ</span><h3>Хороший день начинается<br/>с маленького плана.</h3><p>Расскажите, чего хочется, и сколько есть времени. Остальное найдём вместе.</p></div>}
+            {messages.length===0&&<div className="inspiration"><div className="inspiration-label">Начнём с идеи</div>{starters.map(({icon:Icon,title,description,text})=><button key={title} className="starter-card" onClick={()=>{setQuery(text);textarea.current?.focus();}}><span className="starter-icon"><Icon size={19}/></span><span className="starter-copy"><strong>{title}</strong><small>{description}</small></span><ArrowUpRight size={17}/></button>)}</div>}
             {messages.map(message=>{const result=message.result;const selection=planSelections[message.id]??0;const plan=result?.plans[selection]??null;const latest=message.id===messages[messages.length-1]?.id;return <div className="chat-turn" key={message.id}>
               <div className="user-message"><div>{message.query}</div></div>
               {message.error&&<div className="assistant-message"><div className="message-author"><Sparkles size={13}/>NazarSal</div><p className="error-message">{message.error}</p><button className="text-button" disabled={busy} onClick={()=>void submit(message.query)}>Повторить запрос <RefreshCw size={12}/></button></div>}
@@ -137,7 +137,7 @@ export function Explorer(){
             <div ref={results} className="chat-end"/>
           </div>
             <div className="wish-section chat-input">
-              <div className="composer"><textarea id="wish" ref={textarea} aria-label="Сообщение помощнику" rows={2} maxLength={2000} placeholder="Расскажите, куда хочется…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void submit();}}}/><div className="composer-bottom"><button className="send-button" aria-label="Отправить сообщение" disabled={busy||!query.trim()} onClick={()=>void submit()}>{busy?<LoaderCircle size={18} className="spin"/>:<ArrowUp size={20}/>}</button></div></div>
+              <div className="composer"><textarea id="wish" ref={textarea} aria-label="Сообщение помощнику" rows={2} maxLength={2000} placeholder="Например, кофе и прогулка у реки…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void submit();}}}/><div className="composer-bottom"><span className="composer-hint">Ваши пожелания → ваш маршрут</span><button className="send-button" aria-label="Отправить сообщение" disabled={busy||!query.trim()} onClick={()=>void submit()}>{busy?<LoaderCircle size={18} className="spin"/>:<ArrowUp size={20}/>}</button></div></div>
               {error&&<p className="error-message" role="alert">{error}</p>}
             </div>
 

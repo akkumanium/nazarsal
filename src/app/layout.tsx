@@ -9,5 +9,5 @@ const manrope = Manrope({
 });
 
 export const metadata:Metadata={title:"NazarSal — маршруты по Астане",description:"Найдите места в Астане и спланируйте прогулку."};
-export const viewport:Viewport={width:"device-width",initialScale:1,themeColor:"#f7f8fa"};
+export const viewport:Viewport={width:"device-width",initialScale:1,themeColor:"#f5f3ed"};
 export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="ru" className={manrope.variable}><body>{children}</body></html>;}
