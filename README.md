@@ -1,5 +1,3 @@
-# YOUTUBE DEMO : [https://www.youtube.com/watch?v=GdxWBlWZWZs]
-# PRESENTATION: [https://drive.google.com/file/d/1xXI-vglUyM-u_g-JZE077S50aMJCyvyA/view]
 # NazarSal · Astana
 
 Веб-приложение для прогулок по Астане: GPT-6 Luna разбирает запрос, PostGIS извлекает реальные OSM-объекты, код проверяет расписания и бюджет, openrouteservice или Geoapify рассчитывает пешеходные и автомобильные маршруты. Карточка на карте показывает текущую погоду Open-Meteo для Астаны: температуру, ощущаемую температуру, состояние неба и ветер. Погода не передаётся ИИ и не влияет на подбор мест. Векторного поиска, MediaWiki и Wikidata нет.
